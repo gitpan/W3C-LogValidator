@@ -1,7 +1,16 @@
-Revision history for Perl extension W3C::LogValidator
+Revision history for Perl module W3C::LogValidator
+$Id: Changes,v 1.10 2004/06/08 06:36:46 ot Exp $
 
+TODO	- add option with regexps of documents to ignore
+0.3
+	- adding CSSValidator Module
+	- Adding (experimental) SurveyEngine Module
+	- adding support for "w3" log format
+	- changed output for clearer display of results
+	- added an option to set the From: address in Output::Mail
+	- the LogValidator now checks for the actual Content-Type of documents with no extension (format negociated)
 0.2
-	- adding support to "plain" log file to process simple lists of URIs
+	- adding support to "plain" log format to process simple lists of URIs
 	- improved HTML output
 
 0.1.1		May 8th 2003 : maintenance release

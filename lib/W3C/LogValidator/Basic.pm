@@ -1,10 +1,10 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2003 the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Basic.pm,v 1.1 2003/05/07 02:26:07 ot Exp $
+# $Id: Basic.pm,v 1.4 2004/06/07 14:25:54 ot Exp $
 
 package W3C::LogValidator::Basic;
 use strict;
@@ -52,6 +52,12 @@ sub process_list
 {
 	my $self = shift;
 	my $max_invalid = undef;
+	my $max_documents = undef;
+	if (exists $config{MaxDocuments}) {$max_documents = $config{MaxDocuments}}
+	else {$max_documents = 0}
+
+# This basic module does not actually "validates"
+# so MaxInvalid is not relevant... Keeping it anyway
 	if (exists $config{MaxInvalid}) {$max_invalid = $config{MaxInvalid}}
 	else {$max_invalid = 0}
 	my $name = "";
@@ -75,7 +81,7 @@ sub process_list
 	push @result_head, "Hits";
 	push @result_head, "Address";
 	my $census = 0;
-	while ( (@uris) and  (($census < $max_invalid) or (!$max_invalid)) )
+	while ( (@uris) and  (($census < $max_documents) or (!$max_documents)) )
 	{
 		my $uri = shift (@uris);
 		chomp ($uri);
@@ -122,10 +128,10 @@ W3C::LogValidator::Basic
 
   use  W3C::LogValidator::Basic;
   my $validator = new W3C::LogValidator::Basic;
-  my $max_invalid = 12;
+  my $max_documents = 12;
 	# how many log entries are parsed and returned before we stop
 	# 0 -> processes everything
-  my $result_string= $validator->process_list($max_invalid);
+  my $result_string= $validator->process_list($max_documents);
 
 =head1 DESCRIPTION
 

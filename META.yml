@@ -1,0 +1,19 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         W3C-LogValidator
+version:      0.3
+version_from: 
+installdirs:  site
+requires:
+    Config::General:               0
+    DB_File:                       0
+    Exporter:                      0
+    File::Temp:                    0
+    LWP::UserAgent:                0
+    Mail::Sendmail:                0
+    Sys::Hostname:                 0
+    URI::Escape:                   0
+    WebService::Validator::CSS::W3C: 0
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17

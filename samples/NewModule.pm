@@ -1,12 +1,12 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) YYYY the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics 
 #       Massachusetts Institute of Technology.
-# written by Olivier Thereaux <ot@w3.org> for W3C
+# written by Firstname Lastname <your@email.address> for W3C
 #
-# $Id: NewModule.pm,v 1.4 2003/04/14 00:48:01 ot Exp $
+# $Id: NewModule.pm,v 1.7 2004/03/28 19:31:42 ot Exp $
 
-package W3C::LogValidator::CHANGEME;
+package W3C::LogValidator::Changeme;
 use strict;
 use warnings;
 
@@ -73,7 +73,8 @@ sub process_list
 	# do what pleases you!
 	print "Done!\n" if $verbose;
 
-	# as many headers as you like
+
+
 	untie %hits;                                                                  
 	
 	# Here is what the module will return. The hash will be sent to 
@@ -107,20 +108,15 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::CHANGEME
+W3C::LogValidator::NewModule - Sample New processing module for the Log Validator
 
 =head1 SYNOPSIS
 
-  use  W3C::LogValidator::CHANGEME;
-  my $validator = new W3C::LogValidator::CHANGEME(\%mod_config);
-  my $max_invalid = 12;
-	# how many log entries are parsed and returned before we stop
-	# 0 -> processes everything
-  my %results= $validator->process_list($max_invalid);
+
 
 =head1 DESCRIPTION
 
-This module is part of the W3C::LogValidator suite, and does cool things
+This module is part of the W3C::LogValidator suite, and ....
 
 =head1 AUTHOR
 
@@ -129,5 +125,6 @@ you <your@address>
 =head1 SEE ALSO
 
 W3C::LogValidator::LogProcessor, perl(1).
+Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
 
 =cut

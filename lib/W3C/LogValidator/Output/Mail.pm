@@ -1,10 +1,10 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2003 the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Mail.pm,v 1.1 2003/05/07 02:53:20 ot Exp $
+# $Id: Mail.pm,v 1.5 2004/06/08 05:10:48 ot Exp $
 
 package W3C::LogValidator::Output::Mail;
 use strict;
@@ -42,34 +42,10 @@ sub output
 	my %results;
 	my $outputstr ="";
 	if (@_) {%results = %{(shift)}}
-	$outputstr= "
-************************************************************************
-Results for module ".$results{'name'}."
-************************************************************************\n";
-	$outputstr= $outputstr.$results{"intro"}."\n\n" if ($results{"intro"});
-	my @thead = @{$results{"thead"}};
-	while (@thead)
-	{
-		my $header = shift (@thead);	
-		$outputstr= $outputstr."$header   ";
-	}
-	$outputstr= $outputstr."\n";
-	my @trows = @{$results{"trows"}};
-	while (@trows)
-	{
-		my @row=@{shift (@trows)};
-		my $tcell;
-		while (@row)
-		{
-			$tcell= shift (@row);	
-			chomp $tcell;
-			$outputstr= $outputstr."$tcell   ";
-		}
-		$outputstr= $outputstr."\n";
-	}
-	$outputstr= $outputstr."\n";
-	$outputstr= $outputstr.$results{"outro"}."
-************************************************************************\n\n" if ($results{"outro"});
+	use W3C::LogValidator::Output::Raw;
+	$outputstr = W3C::LogValidator::Output::Raw->output(\%results);
+	print $outputstr if ($verbose >2 ); # debug
+
 	return $outputstr;	
 }
 
@@ -82,15 +58,23 @@ sub finish
         {
                 my $result_string = shift;
 		my ($sec,$min,$hour,$day,$mon,$year,$wday,$yday) = gmtime(time);
+	        my $hour = sprintf ( "%02d", $hour);
+		my $min = sprintf ( "%02d", $min);
 		$mon ++; # weird 'feature': months run 0-11; days run 1-31 :-(
 		my $date = ($year+1900) .'-'. ($mon>9 ? $mon:"0$mon") .'-'. ($day>9 ? $day:"0$day");
 
 		if (defined $config{"ServerAdmin"})
+		# we have someone to send the mail to
 		{
 			my $add = $config{"ServerAdmin"};
+			my $mail_from = $add;
+			if (defined $config{"MailFrom"})
+			{
+				$mail_from = $config{"MailFrom"};
+			}
 			use Mail::Sendmail;
 			my %mail = (To      => $add,
-			From    =>  "LogValidator <$add>",
+			From    =>  "LogValidator <$mail_from>",
 			Subject => "Logvalidator results : $date at $hour:$min GMT",
 			'X-Mailer' => "Mail::Sendmail version $Mail::Sendmail::VERSION",
 			Message => $result_string );

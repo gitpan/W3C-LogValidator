@@ -1,10 +1,10 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2003 the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.2 2003/05/07 02:52:25 ot Exp $
+# $Id: LogValidator.pm,v 1.7 2004/06/08 04:59:23 ot Exp $
 
 package W3C::LogValidator;
 use strict;
@@ -190,7 +190,7 @@ sub read_logfile
 				{
 					$tmp_record = $self->find_uri($tmp_record, $logtype);
 					#print "$tmp_record \n" if ($verbose >2);
-					$self->add_uri($tmp_record);
+					if ($self->no_cgi($tmp_record)) {$self->add_uri($tmp_record);}
 				}
 				$entriescounter++;
 			}
@@ -200,6 +200,17 @@ sub read_logfile
 		}
 	}
 }
+
+sub no_cgi
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $tmp_uri = shift;
+		return (!($tmp_uri =~ /\?/));
+	}
+}
+
 
 sub find_uri
 # finds the "real" URI from a log record
@@ -217,6 +228,18 @@ sub find_uri
 		if ($logtype eq "plain")
 		{
 			$tmprecord = $record_arry[0];
+		}
+		elsif ($logtype eq "w3") # our W3C in-house log format
+		{
+			$tmprecord = $record_arry[4];
+			# an oddity of W3C log formats
+			my $serverstring = join ("",'http://',$config{LogProcessor}{ServerName});
+			$tmprecord =~ s/$serverstring//;
+			my $path = $config{LogProcessor}{DocumentRoot};
+			$tmprecord =~ s/$path/\//;
+			$tmprecord = $self->remove_duplicates($tmprecord);
+			$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
+			
 		}
 		else #common combined or full
 		{
@@ -350,7 +373,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator - Main module for LogValidator
+W3C::LogValidator - The W3C Log Validator - processes Web server logs or list of files through validation modules
 
 =head1 SYNOPSIS
 

@@ -1,10 +1,10 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2003 the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTML.pm,v 1.7 2003/05/18 16:17:04 ot Exp $
+# $Id: HTML.pm,v 1.8 2003/08/26 20:06:07 ot Exp $
 
 package W3C::LogValidator::Output::HTML;
 use strict;

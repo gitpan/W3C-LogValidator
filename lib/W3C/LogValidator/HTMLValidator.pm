@@ -1,10 +1,10 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2003 the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.1 2003/05/07 02:26:07 ot Exp $
+# $Id: HTMLValidator.pm,v 1.10 2004/06/08 06:36:04 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -43,7 +43,14 @@ sub new
 	$config{ValidatorPort} = "80" if (!exists $config{ValidatorPort});
 	$config{ValidatorString} = "/check\?uri=" if (!exists $config{ValidatorString});
 	$config{ValidatorPostString} = "\;output=xml" if (!exists $config{ValidatorPostString});
-	$self->{AUTH_EXT} = ".html .xhtml .phtml .htm /";
+        if (exists $config{AuthorizedExtensions})
+        {
+                $self->{AUTH_EXT} =  $config{AuthorizedExtensions};
+        }
+        else
+        {
+		$self->{AUTH_EXT} = ".html .xhtml .phtml .htm .shtml .php .svg .xml /";
+	}
 	if (exists $config{verbose}) {$verbose = $config{verbose}}
         bless($self, $class);
         return $self;
@@ -98,6 +105,58 @@ sub new_doc{
         $self->{VALID_SUCCESS} = undef;
         $self->{VALID_HEAD} = undef;
 }
+
+sub HEAD_check {
+## Checking whether a document with no extension is actually an HTML/XML document
+## causes a lot of requests, but internal - should be OK?
+	my $self = shift;
+	my $check_uri;
+	use LWP::UserAgent;
+	if (@_) { $check_uri = shift }
+	my $ua = new LWP::UserAgent;
+	my $method = "HEAD";
+	my $request = new HTTP::Request("$method", "$check_uri");
+	my $response = new HTTP::Response;
+	$response = $ua->simple_request($request);
+	my $is_html = 0;
+	if ($response->is_success) # not an error, we could contact the server
+	{
+		my $type = $response->header('Content-Type');
+		if ($type =~ /text\/html|application\/xhtml+xml|text\/xml/) #should be enough for a start
+		{ 
+			$is_html = 1;
+			# print "URI with no extension $check_uri has content-type $type\n" if ($verbose > 2); # debug
+		}
+	}
+	return $is_html;
+}
+
+sub trim_uris 
+{
+        my $self = shift;
+        my @authorized_extensions = split(" ", $self->auth_ext);
+        my @trimmed_uris;
+        my $uri;
+        while ($uri = shift)
+        {
+                my $uri_ext = "";
+                my $match = 0;
+                if ($uri =~ /(\.[0-9a-zA-Z]+)$/)
+                {  
+                   $uri_ext = $1;
+                }
+                elsif ($uri =~ /\/$/) { $uri_ext = "/";}
+                elsif ( $self->HEAD_check($uri) ) { $match = 1; }
+                foreach my $ext (@authorized_extensions)
+                {   
+                    if ($ext eq $uri_ext) { $match = 1; }
+                }
+                push @trimmed_uris,$uri if ($match);
+        }
+        return @trimmed_uris;
+}
+
+
 #########################################
 # Actual subroutine to check the list of uris #
 #########################################
@@ -123,41 +182,34 @@ sub process_list
 	my $max_invalid = undef;
 	if (exists $config{MaxInvalid}) {$max_invalid = $config{MaxInvalid}}
 	else {$max_invalid = 0}
+	my $max_documents = undef;
+	if (exists $config{MaxDocuments}) {$max_documents = $config{MaxDocuments}}
+	else {$max_documents = 0}
 	my $name = ""; 
 	if (exists $config{ServerName}) {$name = $config{ServerName}}
-	my @trimmed_uris;
-	foreach my $uri (@uris)
-	{
-		my @authorized_extensions = split(" ", $self->auth_ext);
-		foreach my $ext (@authorized_extensions)
-		{
-			if ($uri=~ /$ext$/ )
-			{ push @trimmed_uris,$uri }
-		}
-	}
-	@uris = @trimmed_uris;
+	@uris = $self->trim_uris(@uris);
 	my @result;
 	my @result_head;
 	my $intro="Here are the <census> most popular invalid document(s) that I could find in the 
 logs for $name.";
 	my $outro;
+	push @result_head, "Rank";
 	push @result_head, "Hits";
+	push @result_head, "#Error(s)";
 	push @result_head, "Address";
-	push @result_head, "Error Number";
 	my $invalid_census = 0; # number of invalid docs
 	my $last_invalid_position = 0; # latest position at which we found an invalid doc
 	my $total_census = 0; # number of documents checked
 	my $ua = new LWP::UserAgent;
 #	$ua->timeout([30]); # instead of 180. 3 minutes timeout is too long.
 	my $uri = undef;
-	while ( (@uris) and  (($invalid_census < $max_invalid) or (!$max_invalid)) )
-	# if $max_invalid is 0, process everything
+	while ( (@uris) and  (($invalid_census < $max_invalid) or (!$max_invalid)) and (($total_census < $max_documents) or (!$max_documents)) )
 	{
 		$uri = shift (@uris);
 		$self->new_doc();
 		my $uri_orig = $uri;
 		$total_census++;
-		print "	processing $uri..." if ($verbose > 1);
+		print "	processing #$total_census $uri..." if ($verbose > 1);
 		# escaping URI
 		$uri = uri_escape($uri);
 		# creating the HTTP query string with all parameters
@@ -177,9 +229,10 @@ logs for $name.";
 #			if (1) # debug
 			{
 				my @result_tmp;
+				push @result_tmp, $total_census;
 				push @result_tmp, $hits{$uri_orig};
-				push @result_tmp, $uri_orig;
 				push @result_tmp, $self->valid_err_num;
+				push @result_tmp, $uri_orig;
 				push @result, [@result_tmp];
 				$invalid_census++;
 				$last_invalid_position = $total_census;
@@ -216,7 +269,7 @@ logs for $name.";
 		{
 			$outro="Conclusion :
 I had to check $last_invalid_position document(s) in order to find $invalid_census invalid HTML documents.
-This means that about $ratio\% of your most popular documents was invalid.";
+This means that about $ratio\% of your most popular documents were invalid.";
 		}
 		else
 		# we didn't find as many invalid docs as requested
@@ -225,7 +278,7 @@ This means that about $ratio\% of your most popular documents was invalid.";
 			$outro="Conclusion :
 You asked for $max_invalid invalid HTML document but I could only find $invalid_census 
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents was invalid.";
+This means that about $ratio\% of your most popular documents were invalid.";
 		}
 	}
 	elsif (!$total_census)
@@ -237,6 +290,10 @@ This means that about $ratio\% of your most popular documents was invalid.";
 	{
 		$intro=~s/<census> //;
 		$outro="I couldn't find any invalid document in this log. Congratulations!";
+	}
+	if (($total_census == $max_documents) and ($total_census)) # we stopped because of max_documents
+	{
+		$outro=$outro."\nNOTE: I stopped after processing $max_documents documents:\n     Maybe you could set MaxDocuments to a higher value?";
 	}
 	untie %hits;
 	my %returnhash;

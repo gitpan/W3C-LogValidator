@@ -5,7 +5,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: logprocess.pl,v 1.8 2003/05/18 15:11:08 ot Exp $
+# $Id: logprocess.pl,v 1.9 2003/08/22 16:18:01 ot Exp $
 #########################
 
 use strict;

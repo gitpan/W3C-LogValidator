@@ -12,7 +12,7 @@ WriteMakefile(
     'NAME'              => 'W3C::LogValidator',
     'DISTNAME'          => 'W3C-LogValidator',
     'AUTHOR'            => 'Olivier Thereaux <ot@w3.org>',
-    'VERSION'      	=> '0.2', 
+    'VERSION'      	=> '0.3', 
     'PREREQ_PM'         => { 'Exporter'       => 0,
                              'Sys::Hostname'  => 0,
                              'LWP::UserAgent' => 0,
@@ -20,7 +20,8 @@ WriteMakefile(
 			     'Config::General' => 0,
 			     'File::Temp' => 0,
 			     'DB_File' => 0,
-			     'Mail::Sendmail' => 0
+			     'Mail::Sendmail' => 0,
+			     'WebService::Validator::CSS::W3C' => 0
                            },
     'EXE_FILES'         => [ 'bin/logprocess.pl' ],
     'dist'              => { COMPRESS => 'gzip -9f', SUFFIX => '.gz' },

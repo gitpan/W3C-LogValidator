@@ -1,10 +1,10 @@
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2003 the World Wide Web Consortium :
 #       Keio University,
-#       Institut National de Recherche en Informatique et Automatique,
+#       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Raw.pm,v 1.1 2003/05/07 02:53:20 ot Exp $
+# $Id: Raw.pm,v 1.5 2004/06/08 05:10:48 ot Exp $
 
 package W3C::LogValidator::Output::Raw;
 use strict;
@@ -36,8 +36,58 @@ sub new
         return $self;
 }
 
+
+sub width
+{
+        my $self = shift;
+	my $column_num = shift;
+	my %results = %{(shift)};
+	my @thead = @{$results{"thead"}};
+	my @trows = @{$results{"trows"}};
+	my $headerwidth= length($thead[$column_num]);
+	my $columnwidth = 0;
+	my $cellwidth = 0;
+	my @tcolumn;
+	while (@trows) 
+	{
+		my @row=@{shift (@trows)};
+		$cellwidth = length($row[$column_num]);
+		if ($cellwidth > $columnwidth) { $columnwidth = $cellwidth; }
+	}
+	if ($columnwidth > $headerwidth+1) 
+	{ 
+		return $columnwidth; 
+	}
+	else
+	{
+		return $headerwidth+2;
+	}
+
+}
+
+sub spaces
+{
+	my $self = shift;
+	my $spaces = shift;
+	my $bloat = "";
+	for (my $i=0; $i<$spaces; $i++)
+	{ $bloat = $bloat." "; } # lame, innit?
+	return $bloat;
+}
+
+sub dashes
+{
+	my $self = shift;
+	my $spaces = shift;
+	my $bloat = "";
+	for (my $i=0; $i<$spaces; $i++)
+	{ $bloat = $bloat."-"; } # lame, innit?
+	return $bloat;
+}
+
 sub output
 {
+	use POSIX;
 	my $self = shift;
 	my %results;
 	my $outputstr ="";
@@ -48,22 +98,51 @@ Results for module ".$results{'name'}."
 ************************************************************************\n";
 	$outputstr= $outputstr.$results{"intro"}."\n\n" if ($results{"intro"});
 	my @thead = @{$results{"thead"}};
+	my $column_num = 0;
+	my $all_columns = int(@thead);
+	my @widths;
+	# printing table headers
 	while (@thead)
 	{
 		my $header = shift (@thead);	
-		$outputstr= $outputstr."$header   ";
+		my $spaces;
+		$widths[$column_num] = $self->width($column_num, \%results);
+		if ($widths[$column_num] > (length($header)+2) ) # long content
+		{
+			$spaces = $widths[$column_num] - length($header);
+		}
+		else { $spaces = 2 } # long column header
+		# Header is centered
+		my $space_before= ceil($spaces/2);
+		my $space_after= floor($spaces/2);
+		$outputstr= $outputstr.$self->spaces($space_before);
+		$outputstr= $outputstr."$header";
+		$outputstr= $outputstr.$self->spaces($space_after);
+		$outputstr= $outputstr." "; # column separation space
+		$column_num = $column_num+1;
 	}
 	$outputstr= $outputstr."\n";
+	
+	# printing separation dashes
+	for ( my $clm = 0; $clm < $all_columns; $clm++)
+	{
+		$outputstr=$outputstr."".$self->dashes($widths[$clm])." ";
+	}
+	$outputstr= $outputstr."\n";
+	# printing the bulk of results table
 	my @trows = @{$results{"trows"}};
 	while (@trows)
 	{
+		my $column_num = 0;
 		my @row=@{shift (@trows)};
 		my $tcell;
 		while (@row)
 		{
 			$tcell= shift (@row);	
 			chomp $tcell;
-			$outputstr= $outputstr."$tcell   ";
+			my $spaces = $widths[$column_num] - length($tcell);
+			$outputstr= $outputstr."$tcell".$self->spaces($spaces+1);
+			$column_num = $column_num+1;
 		}
 		$outputstr= $outputstr."\n";
 	}
