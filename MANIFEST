@@ -1,0 +1,14 @@
+MANIFEST		This file
+README			Do it! Read this file.
+Changes			History of this package
+Makefile.PL
+LogProcessor.pm		Main module for the LogValidator
+Config.pm		Config parser module
+HTMLValidator.pm	Validates the logs against the W3C Markup (HTML) validator service 
+Basic.pm		Returns document sorted according to their popularity (hits)
+HTMLOutput.pm		HTML output module
+RawOutput.pm		command-line mode output module
+MailOutput.pm		e-mail output module
+samples/NewModule.pm	Template for a new validation module
+samples/logprocess.conf sample config file
+bin/logprocess.pl
