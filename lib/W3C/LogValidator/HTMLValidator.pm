@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.10 2004/06/08 06:36:04 ot Exp $
+# $Id: HTMLValidator.pm,v 1.16 2004/08/16 02:12:09 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -15,7 +15,8 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.2';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
+
 
 
 ###########################
@@ -52,13 +53,16 @@ sub new
 		$self->{AUTH_EXT} = ".html .xhtml .phtml .htm .shtml .php .svg .xml /";
 	}
 	if (exists $config{verbose}) {$verbose = $config{verbose}}
+	@{$self->{URIs}} = undef;
         bless($self, $class);
         return $self;
 }
 
 sub uris
 {
-	#unused
+	my $self = shift;
+	if (@_) { @{$self->{URIs}} = @_ }
+	return @{$self->{URIs}};
 }
 
 
@@ -136,7 +140,15 @@ sub trim_uris
         my $self = shift;
         my @authorized_extensions = split(" ", $self->auth_ext);
         my @trimmed_uris;
-        my $uri;
+        my $exclude_regexp = "";
+	my @excluded_areas;
+        $exclude_regexp = $config{ExcludeAreas};
+	if ($exclude_regexp){
+            $exclude_regexp =~ s/\//\\\//g ;
+            @excluded_areas = split(" ", $exclude_regexp);
+	}
+	else { print "nothing to exclude" if ($verbose >2);}
+	my $uri;
         while ($uri = shift)
         {
                 my $uri_ext = "";
@@ -151,11 +163,26 @@ sub trim_uris
                 {   
                     if ($ext eq $uri_ext) { $match = 1; }
                 }
+		if ($match)
+		{
+            	  foreach my $area (@excluded_areas)
+            	  {
+                    if ($uri =~ /$area/)
+                    {
+			my $slasharea = $area;
+                        $slasharea =~ s/\\\//\//g;
+                        $slasharea =~ s/\\././g;
+                        print "Ignoring $uri matching $slasharea \n" if ($verbose > 2) ;
+                        $match = 0;
+                    }
+
+		  }
+                }
+		
                 push @trimmed_uris,$uri if ($match);
         }
         return @trimmed_uris;
 }
-
 
 #########################################
 # Actual subroutine to check the list of uris #
@@ -163,22 +190,29 @@ sub trim_uris
 
 sub process_list
 {
+	my $self = shift;
 	print "Now using the HTML Validator module... " if $verbose;
 	print "\n" if ($verbose > 1);
-	
-	# Opening the file with the hits and URIs data
-	use DB_File; 
-	my $tmp_file = $config{tmpfile};
+	my @uris = undef;
 	my %hits;
-	tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) || 
-		die ("Cannot create or open $tmp_file");
-	my @uris = sort { $hits{$b} <=> $hits{$a} } keys %hits;
-	
+	# Opening the file with the hits and URIs data
+	if (defined ($config{tmpfile}))
+	{
+		use DB_File; 
+		my $tmp_file = $config{tmpfile};
+		tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) || 
+		    die ("Cannot create or open $tmp_file");
+		@uris = sort { $hits{$b} <=> $hits{$a} } keys %hits;
+	}
+	elsif ($self->uris())
+	{
+		@uris = $self->uris();
+		foreach my $uri (@uris) { $hits{$uri} = 0 }
+	}
 	print "\n (This may take a long time if you have many files to validate)\n" if ($verbose eq 1);
 	print "\n" if ($verbose > 2); # trying to breathe in the debug volume...
 	use LWP::UserAgent;
 	use URI::Escape;
-	my $self = shift;
 	my $max_invalid = undef;
 	if (exists $config{MaxInvalid}) {$max_invalid = $config{MaxInvalid}}
 	else {$max_invalid = 0}
@@ -295,7 +329,10 @@ This means that about $ratio\% of your most popular documents were invalid.";
 	{
 		$outro=$outro."\nNOTE: I stopped after processing $max_documents documents:\n     Maybe you could set MaxDocuments to a higher value?";
 	}
-	untie %hits;
+	if (defined ($config{tmpfile}))
+        {
+		untie %hits;
+	}
 	my %returnhash;
         $returnhash{"name"}="HTMLValidator";
         $returnhash{"intro"}=$intro;
@@ -318,17 +355,111 @@ W3C::LogValidator::HTMLValidator - check HTML validity vith validator.w3.org
 =head1 SYNOPSIS
 
   use  W3C::LogValidator::HTMLValidator;
-  my $validator = new W3C::LogValidator::HTMLValidator;
-  my $max_invalid = 12;
-	# how many log entries are parsed and returned before we stop
-	# 0 -> processes everything
-  $validator->uris('http://www.w3.org/', 'http://my.web.server/my/web/page.html');
-  my $result_string= $validator->process_list($max_invalid);
+  my %config = ("verbose" => 2);
+  my $validator = W3C::LogValidator::HTMLValidator->new(\%config);
+  $validator->uris('http://www.w3.org/Overview.html', 'http://www.yahoo.com/index.html');
+  my %results = $validator->process_list;
 
 =head1 DESCRIPTION
 
 This module is part of the W3C::LogValidator suite, and checks HTML validity
 of a given document via the W3C HTML validator service.
+
+=head1 API
+
+=head2 Constructor
+
+=over 2
+
+=item $val = W3C::LogValidator::HTMLValidator->new
+
+Constructs a new C<W3C::LogValidator:HTMLValidator> processor.  
+
+You might pass it a configuration hash reference (see L<W3C::LogValidator/config_module> and L<W3C::LogValidator::Config>)
+
+  $validator = W3C::LogValidator::HTMLValidator->new(\%config);  
+
+=back
+
+=head2 Main processing method
+=over 4
+
+
+
+=item $val->process_list
+
+Processes a list of sorted URIs through the W3C Markup Validator.
+
+The list can be set C<uris>. If the $val was given a config has when constructed, and if the has has a "tmpfile" key, C<process_list> will try to read this file as a hash of URIs and "hits" (popularity) with L<DB_File>.
+
+Returns a result hash. Keys for this hash are: 
+
+
+  name (string): the name of the module, i.e "HTMLValidator"
+  intro (string): introduction to the processing results
+  thead (array): headers of the results table
+  trows (array of arrays): rows of the results table
+  outro (string): conclusion of the processing results
+
+=back
+
+=head2 General methods
+
+=over 4
+
+=item $val->uris
+
+Returns a  list of URIs to be processed (unless the configuration gives the location for the hash of URI/hits berkeley file, see C<process_list> 
+If an array is given as a parameter, also sets the list of URIs and returns it.
+
+
+=item $val->trim_uris 
+
+Given a list of URIs of documents to process, returns a subset of this list containing the URIs of documents the module supposedly can handle.
+The decision is made based on file extensions (see C<auth_ext>), content-type (see C<HEAD_check>) , and the setting for ExcludedAreas
+
+=item $val->HEAD_check
+
+Checks whether a document with no extension is actually an HTML/XML document through an HTTP HEAD request
+returns 1 if the URI is of an expected content-type, 0 otherwise
+
+=item $val->auth_ext
+
+Returns the file extensions (space separated entries in a string) supported by the Module.
+Public method accessing $self->{AUTH_EXT}, itself coming from either the AuthorizedExtensions configuration setting, or a default value
+
+=item $val->valid
+
+Sets / Returns whether the document being processed has been found to be valid or not.
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->valid_err_num
+
+Sets / Returns the number of validation errors for the document being processed.
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->valid_success
+
+Sets / Returns whether the module was able to process validation of the current document successfully (regardless of valid/invalid result)
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->valid_head
+
+Sets / Returns all HTTP headers returned by the markup validator when attempting to validate the current document.
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->new_doc
+
+Resets all validation variables to 'undef'. In effect, prepares the processing module to the handling of a new document.
+
+=back
+
+=head1 BUGS
+
+Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
+
+
+
 
 =head1 AUTHOR
 

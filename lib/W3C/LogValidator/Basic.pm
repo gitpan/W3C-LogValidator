@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Basic.pm,v 1.4 2004/06/07 14:25:54 ot Exp $
+# $Id: Basic.pm,v 1.9 2004/08/16 02:12:09 ot Exp $
 
 package W3C::LogValidator::Basic;
 use strict;
@@ -16,7 +16,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -31,7 +31,7 @@ sub new
         my $proto = shift;
         my $class = ref($proto) || $proto;
 	# mandatory vars for the API
-	$self->{URIS}	= undef;
+	@{$self->{URIs}} = undef;
 	# don't change this
 	if (@_) {%config =  %{(shift)};}
 	if (exists $config{verbose}) {$verbose = $config{verbose}}
@@ -40,8 +40,44 @@ sub new
 }
 
 sub uris { 
-# unused
+	my $self = shift;
+	if (@_) { @{$self->{URIs}} = @_ }
+	return @{$self->{URIs}};
 }
+
+
+sub trim_uris 
+{
+        my $self = shift;
+        my @trimmed_uris;
+	my $exclude_regexp = "";
+	my @exclude_areas;
+	$exclude_regexp = $config{ExcludeAreas};
+	if ($exclude_regexp){
+		$exclude_regexp =~ s/\//\\\//g ;
+		@exclude_areas = split(" ", $exclude_regexp);
+	}
+	else { print "nothing to exclude" if ($verbose >2);}
+        my $uri;
+        while ($uri = shift)
+        {
+	    my $acceptable = 1;
+	    foreach my $area (@exclude_areas)
+	    {
+                if ($uri =~ /$area/)
+                {	
+			my $slasharea = $area;
+			$slasharea =~ s/\\\//\//g;
+			$slasharea =~ s/\\././g;
+			print "Ignoring $uri matching $slasharea \n" if ($verbose > 2) ; 
+			$acceptable = 0;		
+                }
+	    }	
+	    push @trimmed_uris,$uri if ($acceptable);
+        }
+        return @trimmed_uris;
+}
+
 
 #########################################
 # Actual subroutine to check the list of uris #
@@ -64,15 +100,23 @@ sub process_list
 	if (exists $config{ServerName}) {$name = $config{ServerName}}
 
 	print "Now Using the Basic module... \n" if $verbose;
-	# Opening the file with the hits and URIs data
-	use DB_File;
-	my $tmp_file = $config{tmpfile};
 	my %hits;
+	my @uris = undef;
+	if (defined ($config{tmpfile}))
+	{
+		use DB_File; 
+		my $tmp_file = $config{tmpfile};
+		tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) || 
+		    die ("Cannot create or open $tmp_file");
+		@uris = sort { $hits{$b} <=> $hits{$a} } keys %hits;
+	}
+	elsif ($self->uris())
+	{
+		@uris = $self->uris();
+		foreach my $uri (@uris) { $hits{$uri} = 0 }
+	}
 
-	tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) ||
-        die ("Cannot create or open $tmp_file");
-	my @uris = sort { $hits{$b} <=> $hits{$a} }                                   
-                keys %hits;
+        @uris = $self->trim_uris(@uris);
 
 	my $intro="Here are the <census> most popular documents overall for $name.";
 	my @result;
@@ -103,7 +147,9 @@ sub process_list
 	{
 		$intro=~ s/<census>/$census/;
 	}
-	untie %hits;
+	if (defined ($config{tmpfile})) { 
+		untie %hits;
+	}
 	my $outro="";
 	my %returnhash;
 	$returnhash{"name"}="basic";
@@ -127,16 +173,68 @@ W3C::LogValidator::Basic
 =head1 SYNOPSIS
 
   use  W3C::LogValidator::Basic;
-  my $validator = new W3C::LogValidator::Basic;
-  my $max_documents = 12;
-	# how many log entries are parsed and returned before we stop
-	# 0 -> processes everything
-  my $result_string= $validator->process_list($max_documents);
+  my $b = new W3C::LogValidator::Basic;
+  $b->uris('http://www.w3.org/Overview.html', 'http://www.yahoo.com/index.html');
+  my $result_string= $b->process_list();
 
 =head1 DESCRIPTION
 
+
 This module is part of the W3C::LogValidator suite, and simply gives back pages
 sorted by popularity. This is an example of simple module for LogValidator.
+
+=head1 API 
+
+=head2 Constructor
+
+=over 2
+
+=item $b = W3C::LogValidator::Basic->new
+
+Constructs a new C<W3C::LogValidator:HTMLBasic> processor.  
+
+You might pass it a configuration hash reference (see L<W3C::LogValidator/config_module> and L<W3C::LogValidator::Config>)
+Particularly relevant for this module are the "verbose", "MaxDocuments" and obviously "tmpfile" (see C<process_list>).
+Pass the configuration hash ref as follows:
+
+  $b = W3C::LogValidator::HTMLValidator->new(\%config);
+
+=back
+
+=head2 General Methods
+
+=over 4
+
+=item b->uris 
+
+Returns a  list of URIs to be processed (unless the configuration gives the location for the hash of URI/hits berkeley file, see C<process_list> 
+If an array is given as a parameter, also sets the list of URIs and returns it.
+Note: while this method is useful in other modules of L<W3C::LogValidator>, this basic module is here to sort URIs extracted from Log Files by popularity, this method is hence rather useless for L<W3C::LogValidator::Basic>.
+
+=item b->trim_uris 
+
+Given a list of URIs of documents to process, returns a subset of this list containing the URIs of documents the module supposedly can handle.
+For this module, the decision is made based on the setting for ExcludedAreas only
+
+
+=item b->process_list
+
+Formats the list of URIs sorted by popularity.
+
+Returns a result hash. Keys for this hash are: 
+
+  name (string): the name of the module, i.e "Basic"
+  intro (string): introduction to the processing results
+  thead (array): headers of the results table
+  trows (array of arrays): rows of the results table
+  outro (string): conclusion of the processing results
+
+=back
+
+=head1 BUGS
+
+Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
+
 
 =head1 AUTHOR
 

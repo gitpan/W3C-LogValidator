@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Mail.pm,v 1.5 2004/06/08 05:10:48 ot Exp $
+# $Id: Mail.pm,v 1.9 2004/08/12 02:28:51 ot Exp $
 
 package W3C::LogValidator::Output::Mail;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -58,14 +58,20 @@ sub finish
         {
                 my $result_string = shift;
 		my ($sec,$min,$hour,$day,$mon,$year,$wday,$yday) = gmtime(time);
-	        my $hour = sprintf ( "%02d", $hour);
-		my $min = sprintf ( "%02d", $min);
+	        $hour = sprintf ( "%02d", $hour);
+		$min = sprintf ( "%02d", $min);
 		$mon ++; # weird 'feature': months run 0-11; days run 1-31 :-(
 		my $date = ($year+1900) .'-'. ($mon>9 ? $mon:"0$mon") .'-'. ($day>9 ? $day:"0$day");
 
 		if (defined $config{"ServerAdmin"})
 		# we have someone to send the mail to
 		{
+			my $mail_subject = "Logvalidator results";
+			if (defined $config{"Title"})
+			{
+				$mail_subject = $config{"Title"};
+			}
+			$mail_subject = $mail_subject." ($date  $hour:$min GMT)";
 			my $add = $config{"ServerAdmin"};
 			my $mail_from = $add;
 			if (defined $config{"MailFrom"})
@@ -75,11 +81,12 @@ sub finish
 			use Mail::Sendmail;
 			my %mail = (To      => $add,
 			From    =>  "LogValidator <$mail_from>",
-			Subject => "Logvalidator results : $date at $hour:$min GMT",
+			Subject => "$mail_subject",
 			'X-Mailer' => "Mail::Sendmail version $Mail::Sendmail::VERSION",
 			Message => $result_string );
 			print "Sending Mail to $add...\n" if ($verbose >1 );
 			Mail::Sendmail::sendmail(%mail) or print STDERR $Mail::Sendmail::error;
+			if ($verbose >1 ) { print "OK Mail::Sendmail log:\n", $Mail::Sendmail::log, "\n";}
 		}
 		else { print $result_string; }
 	}

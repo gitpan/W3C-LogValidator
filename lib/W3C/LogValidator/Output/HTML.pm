@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTML.pm,v 1.8 2003/08/26 20:06:07 ot Exp $
+# $Id: HTML.pm,v 1.11 2004/08/12 02:28:51 ot Exp $
 
 package W3C::LogValidator::Output::HTML;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.2';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.11 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -89,12 +89,19 @@ sub finish
 # and either save or output
  my $self = shift;
 
+
+my $title = "Logvalidator results";
+if (defined $config{"Title"})
+        {
+             $title = $config{"Title"};
+        }
+
  my $result_string = '<?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title>LogValidator results</title>
+<title>'.$title.'</title>
     <style type="text/css" media="screen">
 h1
 {
@@ -139,7 +146,7 @@ p.footer
 <link rel="Stylesheet" href="http://www.w3.org/QA/Tools/LogValidator/logvalstyle" />
 </head>
 <body>
-<h1>Log Validator results</h1>';
+<h1>'.$title.'</h1>';
 
        if (@_)
         {

@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.7 2004/06/08 04:59:23 ot Exp $
+# $Id: LogValidator.pm,v 1.11 2004/09/07 02:04:36 ot Exp $
 
 package W3C::LogValidator;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.2';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.11 $ =~ /(\d+)\.(\d+)/;
 
 our %config;
 our $output="";
@@ -373,27 +373,132 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator - The W3C Log Validator - processes Web server logs or list of files through validation modules
+W3C::LogValidator - The W3C Log Validator - Quality-focused Web Server log processing engine 
+
+Checks quality/validity of most popular content on a Web server
 
 =head1 SYNOPSIS
 
-use W3C::LogValidator;
+Generic, basic use of the C<W3C::LogValidator> module. Parse configuration file and process relevant logs.
 
-# parse config and process logs 
-my $logprocessor = W3C::LogValidator->new("sample.conf");
-$logprocessor->process;
+    use W3C::LogValidator;
+    my $logprocessor = W3C::LogValidator->new("sample.conf");
+    $logprocessor->process;
 
-# alternatively (use default config and process logs)
-my $logprocessor = W3C::LogValidator->new;
-$logprocessor->process;
+Alternatively (use default config and process logs)
+
+    my $logprocessor = W3C::LogValidator->new;
+    $logprocessor->process;
 
 
 =head1 DESCRIPTION
 
-This module is the main module for the LogValidator set.
-Its role is to process the log files, give the results to the validation modules,
-get their output back, and send this to the output module(s).
+C<W3C::LogValidator> is the main module for the W3C Log Validator, a combination of Web Server log analysis and statistics tool and Web Content quality checker.
 
+As an easy alternative to using this module, the perl script logprocess.pl is bundled in the W3C::LogValidator distribution.
+
+=head1 API
+
+=head2 Constructor
+
+=over 2 
+
+=item $processor = W3C::LogValidator->new
+
+Constructs a new C<W3C::LogValidator> processor.  You might pass a configuration file name, 
+as well as a hash of attribute-value pairs as parameters to the constructor.  
+
+
+I<e.g.> for mail output:
+
+  %conf = (
+    "UseOutputModule" => "W3C::LogValidator::Output::Mail",
+    "ServerAdmin" => 'webmaster@example.com',
+    "verbose" => "3"
+    );
+  $processor = W3C::LogValidator->new("path/to/config.conf", \%conf);
+
+Or I<e.g.> for HTML output:
+
+  %conf = (
+    "UseOutputModule" => "W3C::LogValidator::Output::HTML",
+    "OutputTo" => 'path/to/file.html',
+    "verbose" => "0"
+    );
+  $processor = W3C::LogValidator->new("path/to/config.conf", \%conf);
+
+If given the path to a configuration file, C<new()> will call the L<W3C::LogValidator::Config> module to get its configuration variables. 
+Otherwise, a default set of values is used.
+
+=back
+
+=head2 Main processing method
+
+=over 4
+
+=item $processor->process
+
+Do-it-all method:
+Read configuration file (if any), parse log files, run them through processing modules, send result to output module.
+
+=back
+
+=head2 Modules methods
+
+=over 4
+
+=item $processor->config_module
+
+Creates a configuration hash for a specific module, adding module-specific configuration variables, overriding if necessary
+
+=item $processor->use_modules
+
+Run the data parsed off the log files through the various processing (validation) modules specified by UseValidationModule in the configuration.
+
+=back
+
+=head2 Log parsing and URI methods
+
+=over 4 
+
+=item $processor->read_logfiles
+
+Loops through and parses all log files specified in the configuration
+
+=item $processor->read_logfile('path/to.file')
+
+Extracts URIs and number of hits from a given log file, and feeds it to the processor's URI/Hits table
+
+=item $processor->find_uri
+
+Given a log record and the type of the log (common log format, flat list of URIs, etc), extracts the URI
+
+=item $processor->remove_duplicates
+
+Given a URI, removes "directory index" suffixes such as index.html, etc so that http://foobar/ and http://foobar/index.html be counted as one resource
+
+=item $processor->add_uri
+
+Add a URI to the processor's URI/Hits table
+
+=item $processor->sorted_uris
+
+Returns the list of URIs in the processor's table, sorted by popularity (hits)
+
+=item $processor->no_cgi
+
+Tests whether a given URI contains a CGI query string
+
+=item $processor->hit
+
+Returns the number of hits for a given URI. 
+Basically a "public" method accessing $hits{$uri};
+
+=back
+
+=head1 BUGS
+
+Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
 
 =head1 AUTHOR
 
@@ -402,7 +507,7 @@ Olivier Thereaux <ot@w3.org> for The World Wide Web Consortium
 =head1 SEE ALSO
 
 perl(1).
-Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
+Up-to-date information on this tool at L<http://www.w3.org/QA/Tools/LogValidator/>
 
 =cut
 

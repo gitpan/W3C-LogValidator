@@ -4,7 +4,7 @@
 #	Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Config.pm,v 1.2 2003/08/26 20:06:07 ot Exp $
+# $Id: Config.pm,v 1.6 2004/08/13 06:01:12 ot Exp $
 
 package W3C::LogValidator::Config;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.6 $ =~ /(\d+)\.(\d+)/;
 
 our $config_filename;
 our %conf;
@@ -181,4 +181,93 @@ sub config_file
 	$self->config_default();	
 }
 
+package W3C::LogValidator::Config;
 1;
+
+__END__
+
+=head1 NAME
+
+W3C::LogValidator::Config - Configuration parsing for the Log Validator
+
+=head1 SYNOPSIS
+
+    use W3C::LogValidator::Config;
+    if ($config_filename)
+    { # parse configuration file and populate config hash
+        %config = W3C::LogValidator::Config->new($config_filename)->configure();
+    }
+    else
+    { # populate config hash with "default" values
+        %config = W3C::LogValidator::Config->new()->configure();
+    }
+
+=head1 DESCRIPTION
+
+C<W3C::LogValidator::Config> parses configuration files or directives for the Log Validator
+
+
+=head1 API
+
+=head2 Constructor
+
+=over 2
+
+=item $c = W3C::LogValidator::Config->new
+
+Constructs a new C<W3C::LogValidator::Config> configuration processor.
+A file name may be passed as a variable, as follows:
+
+  $c = W3C::LogValidator::Config->new("path/to/file.conf")
+
+=back
+
+=head2 General methods
+
+=over 4
+
+=item $c->configure
+
+Returns a hash containing configuration variables for the main module and for each processing module.
+
+Hash structure as follows:
+$conf{LogProcessor} is a hash containing configuration info for the main Log Validator process
+e.g : 
+
+    $conf{LogProcessor}{MaxInvalid} is an int with the general setting for MaxInvalid, 
+    $conf{LogProcessor}{UseValidationModule} is an array with all processing modules used
+
+for each processing module, $conf{ProcessingModuleX} is a hash containing configuration info specific to that processing module.
+Typically this is used to override general setting.
+
+=item $c->config_default
+
+Populates the configuration hash (which will then be returned by C<$c-E<gt>configure>) with reasonable default values
+
+=item $c->config_file
+
+Populates the configuration hash by parsing the configuration file given while constructing C<W3C::LogValidator::Config>
+Does not work if that parameter was not passed during construction
+
+The configuration file uses a syntax very similar to the one used by the Apache Web server.
+Both syntax and vocabulary are documented in the sample configuration file (F<samples/logprocess.conf>) 
+distributed with the module.
+
+=back
+
+=head1 BUGS
+
+Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
+
+=head1 AUTHOR
+
+Olivier Thereaux <ot@w3.org> for The World Wide Web Consortium
+
+
+=head1 SEE ALSO
+
+perl(1).
+Up-to-date information on this tool at L<http://www.w3.org/QA/Tools/LogValidator/>
+
+=cut
+

@@ -1,7 +1,12 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.10 2004/06/08 06:36:46 ot Exp $
+$Id: Changes,v 1.12 2004/09/07 04:20:28 ot Exp $
 
-TODO	- add option with regexps of documents to ignore
+
+0.4 
+	- improved test suite
+	- improved API documentation (pod)
+	- add option with regexps of areas / documents to ignore
+	- minor fixes / typos corrected
 0.3
 	- adding CSSValidator Module
 	- Adding (experimental) SurveyEngine Module

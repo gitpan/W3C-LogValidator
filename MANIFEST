@@ -11,9 +11,10 @@ samples/NewModule.pm			Template for a new LogValidator validation module
 samples/NewOutputModule.pm		Template for a new LogValidator output module
 samples/logprocess.conf 		Sample config file
 bin/logprocess.pl
-MANIFEST		This file
-README			Do it! Read this file.
-Changes			History of this package
-test.pl			very basic test - mostly dependence check
+MANIFEST				This file
+README					Do it! Read this file.
+Changes					History of this package
+t/base.t				test basic (core) modules
+t/module-htmlval.t			test HTMLValidator Module
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: CSSValidator.pm,v 1.4 2004/06/09 01:43:11 ot Exp $
+# $Id: CSSValidator.pm,v 1.10 2004/08/16 02:12:09 ot Exp $
 
 package W3C::LogValidator::CSSValidator;
 use strict;
@@ -17,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -32,7 +32,7 @@ sub new
         my $proto = shift;
         my $class = ref($proto) || $proto;
 	# mandatory vars for the API
-	$self->{URIS}	= undef;
+	@{$self->{URIs}} = undef;
 	# internal stuff here
 	# don't change this
         if (@_) {%config =  %{(shift)};}
@@ -115,10 +115,18 @@ sub HEAD_check {
 
 sub trim_uris 
 {
-	my $self = shift;
+        my $self = shift;
         my @authorized_extensions = split(" ", $self->auth_ext);
-	my @trimmed_uris;
-	my $uri;
+        my @trimmed_uris;
+        my $exclude_regexp = "";
+        my @excluded_areas;
+        $exclude_regexp = $config{ExcludeAreas};
+        if ($exclude_regexp){
+            $exclude_regexp =~ s/\//\\\//g ;
+            @excluded_areas = split(" ", $exclude_regexp);
+        }
+        else { print "nothing to exclude" if ($verbose >2);}
+        my $uri;
         while ($uri = shift)
         {
                 my $uri_ext = "";
@@ -133,9 +141,32 @@ sub trim_uris
                 {
                     if ($ext eq $uri_ext) { $match = 1; }
                 }
+                if ($match)
+                {
+                  foreach my $area (@excluded_areas)
+                  {
+                    if ($uri =~ /$area/)
+                    {
+                        my $slasharea = $area;
+                        $slasharea =~ s/\\\//\//g;
+                        $slasharea =~ s/\\././g;
+                        print "Ignoring $uri matching $slasharea \n" if ($verbose > 2) ;
+                        $match = 0;
+                    }
+
+                  }
+                }
+
                 push @trimmed_uris,$uri if ($match);
         }
-	return @trimmed_uris;
+        return @trimmed_uris;
+}
+
+sub uris
+{
+	my $self = shift;
+	if (@_) { @{$self->{URIs}} = @_ }
+	return @{$self->{URIs}};
 }
 
 #########################################
@@ -148,16 +179,26 @@ sub process_list
 	my $self = shift;
 	my $max_invalid = undef;
 	if (exists $config{MaxInvalid}) {$max_invalid = $config{MaxInvalid}}
+	else {$max_invalid = 0}
         my $max_documents = undef;                                                                      
         if (exists $config{MaxDocuments}) {$max_documents = $config{MaxDocuments}}                      
         else {$max_documents = 0}
 	print "Now Using the CSS Validation module...\n" if $verbose;
-	use DB_File;                                                                  
-        my $tmp_file = $config{tmpfile};
-	my %hits;                                                                     
-	tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) ||                              
-	die ("Cannot create or open $tmp_file");                                      
-	my @uris = sort { $hits{$b} <=> $hits{$a} } keys %hits;
+	my @uris = undef;
+	my %hits;
+	if (defined ($config{tmpfile}))
+	{
+		use DB_File; 
+		my $tmp_file = $config{tmpfile};
+		tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) || 
+		    die ("Cannot create or open $tmp_file");
+		@uris = sort { $hits{$b} <=> $hits{$a} } keys %hits;
+	}
+	elsif ($self->uris())
+	{
+		@uris = $self->uris();
+		foreach my $uri (@uris) { $hits{$uri} = 0 }
+	}
 	my $name = "";
 	if (exists $config{ServerName}) {$name = $config{ServerName}}
        	my @result;
@@ -221,7 +262,7 @@ logs for $name.";
 	}
 	print "Done!\n" if $verbose;
 
-	print "invalid_census $invalid_census \n" if ($verbose > 2 );
+#	print "invalid_census $invalid_census \n" if ($verbose > 2 );
 	if ($invalid_census) # we found invalid docs
 	{
 	                if ($invalid_census eq 1)  # let's repect grammar here
@@ -238,15 +279,19 @@ logs for $name.";
                 {
                 	$outro="Conclusion :
 I had to check $last_invalid_position document(s) in order to find $invalid_census invalid CSS documents or documents with stylesheets.
-This means that about $ratio\% of your most popular documents were invalid.";
+This means that about $ratio\% of your most popular documents were invalid.
+
+(Note that this CSS validation module is still experimental)";
                 }
                 else
 		# we didn't find as many invalid docs as requested
 		{
                         $outro="Conclusion :
-You asked for $max_invalid invalid HTML document but I could only find $invalid_census 
+You asked for $max_invalid invalid stylesheet document(s) but I could only find $invalid_census 
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.";
+This means that about $ratio\% of your most popular documents were invalid.
+
+(Note that this CSS validation module is still experimental)";
                 }
         }
         elsif (!$total_census)
@@ -263,8 +308,11 @@ This means that about $ratio\% of your most popular documents were invalid.";
         {
                 $outro=$outro."\nNOTE: I stopped after processing $max_documents documents:\n      Maybe you could set MaxDocuments to a higher value?";
         }
-	untie %hits;                                                                  
 	
+	if (defined ($config{tmpfile}))
+        {
+		untie %hits;                                                                  
+	}
 	# Here is what the module will return. The hash will be sent to 
 	# the output module
 
@@ -292,10 +340,96 @@ __END__
 
 W3C::LogValidator::CSSValidator - Validates CSS style sheets from Web Server logs
 
+=head1 SYNOPSIS
+
+  use  W3C::LogValidator::CSSValidator;
+  my %config = ("verbose" => 2);
+  my $validator = W3C::LogValidator::CSSValidator->new(\%config);
+  $validator->uris('http://www.w3.org/StyleSheets/home.css', 'http://yoda.zoy.org/mt-static/styles.css');
+  my %result= $validator->process_list;
 
 =head1 DESCRIPTION
 
 This module is part of the W3C::LogValidator suite, and is used as an interface to the W3C CSS validation service.
+
+=over 2
+
+=item $val = W3C::LogValidator::CSSValidator->new
+
+Constructs a new C<W3C::LogValidator:CSSValidator> processor.  
+
+You might pass it a configuration hash reference (see L<W3C::LogValidator/config_module> and L<W3C::LogValidator::Config>)
+
+  $validator = W3C::LogValidator::CSSValidator->new(\%config);  
+
+=back
+
+=over 4
+
+=item $val->process_list
+
+Processes a list of sorted URIs through the W3C Markup Validator.
+
+The list can be set C<uris>. If the $val was given a config has when constructed, and if the has has a "tmpfile" key, C<process_list> will try to read this file as a hash of URIs and "hits" (popularity) with L<DB_File>.
+
+Returns a result hash. Keys for this hash are: 
+
+
+  name (string): the name of the module, i.e "CSSValidator"
+  intro (string): introduction to the processing results
+  thead (array): headers of the results table
+  trows (array of arrays): rows of the results table
+  outro (string): conclusion of the processing results
+
+
+=item $val->trim_uris 
+
+Given a list of URIs of documents to process, returns a subset of this list containing the URIs of documents the module supposedly can handle.
+The decision is made based on file extensions (see C<auth_ext>) and content-type (see C<HEAD_check>) 
+
+=item $val->HEAD_check
+
+Checks whether a document with no extension is actually a CSS document through an HTTP HEAD request
+returns 1 if the URI is of an expected content-type, 0 otherwise
+
+=item $val->auth_ext
+
+Returns the file extensions (space separated entries in a string) supported by the Module.
+Public method accessing $self->{AUTH_EXT}, itself coming from either the AuthorizedExtensions configuration setting, or a default value
+
+=item $val->valid
+
+Sets / Returns whether the document being processed has been found to be valid or not.
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->valid_err_num
+
+Sets / Returns the number of validation errors for the document being processed.
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->valid_success
+
+Sets / Returns whether the module was able to process validation of the current document successfully (regardless of valid/invalid result)
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->valid_head
+
+Sets / Returns all HTTP headers returned by the markup validator when attempting to validate the current document.
+If an argument is given, sets the variable, otherwise returns the current variable.
+
+=item $val->new_doc
+
+Resets all validation variables to 'undef'. In effect, prepares the processing module to the handling of a new document.
+
+=back
+
+=head1 BUGS
+
+Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
+
+
+
+
 
 =head1 AUTHOR
 
