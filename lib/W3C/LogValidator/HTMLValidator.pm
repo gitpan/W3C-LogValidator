@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.32 2003/03/28 09:47:29 ot Exp $
+# $Id: HTMLValidator.pm,v 1.1 2003/05/07 02:26:07 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -277,6 +277,7 @@ Olivier Thereaux <ot@w3.org>
 
 =head1 SEE ALSO
 
-W3C::LogValidator::LogProcessor, perl(1).
+W3C::LogValidator, perl(1).
+Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
 
 =cut

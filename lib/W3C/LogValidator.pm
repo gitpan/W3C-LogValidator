@@ -4,9 +4,9 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogProcessor.pm,v 1.29 2003/03/28 09:47:29 ot Exp $
+# $Id: LogValidator.pm,v 1.2 2003/05/07 02:52:25 ot Exp $
 
-package W3C::LogValidator::LogProcessor;
+package W3C::LogValidator;
 use strict;
 
 require Exporter;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = '0.1.1';
 
 our %config;
 our $output="";
@@ -75,7 +75,7 @@ sub new
 	}
 	elsif (! defined($config{LogProcessor}{UseOutputModule}))
 	{
-		$config{LogProcessor}{UseOutputModule} = "W3C::LogValidator::RawOutput";
+		$config{LogProcessor}{UseOutputModule} = "W3C::LogValidator::Output::Raw";
 	}
 	
 	# output to file 
@@ -331,27 +331,26 @@ sub process
 	
 }
 
-package W3C::LogValidator::LogProcessor;
+package W3C::LogValidator;
 1;
 
 __END__
 
 =head1 NAME
 
-W3C::LogValidator::LogProcessor - Main module for LogValidator
+W3C::LogValidator - Main module for LogValidator
 
 =head1 SYNOPSIS
 
-#parse config and process logs
-use W3C::LogValidator::LogProcessor;
-my $logprocessor = W3C::LogValidator::LogProcessor->new("sample.conf");
+use W3C::LogValidator;
+
+# parse config and process logs 
+my $logprocessor = W3C::LogValidator->new("sample.conf");
 $logprocessor->process;
 
-# or (use default config)
-use W3C::LogValidator::LogProcessor;
-my $logprocessor = W3C::LogValidator::LogProcessor->new;
+# alternatively (use default config and process logs)
+my $logprocessor = W3C::LogValidator->new;
 $logprocessor->process;
-
 
 
 =head1 DESCRIPTION
@@ -360,7 +359,6 @@ This module is the main module for the LogValidator set.
 Its role is to process the log files, give the results to the validation modules,
 get their output back, and send this to the output module(s).
 
-This module is part of the W3C::LogValidator CPAN module.
 
 =head1 AUTHOR
 
@@ -369,6 +367,7 @@ Olivier Thereaux <ot@w3.org> for The World Wide Web Consortium
 =head1 SEE ALSO
 
 perl(1).
+Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
 
 =cut
 

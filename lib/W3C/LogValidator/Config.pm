@@ -4,7 +4,7 @@
 #	Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Config.pm,v 1.13 2003/03/26 08:46:24 ot Exp $
+# $Id: Config.pm,v 1.1 2003/05/07 02:26:07 ot Exp $
 
 package W3C::LogValidator::Config;
 use strict;

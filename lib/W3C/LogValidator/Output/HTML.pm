@@ -4,9 +4,9 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLOutput.pm,v 1.3 2003/03/28 09:47:29 ot Exp $
+# $Id: HTML.pm,v 1.1 2003/05/07 02:53:20 ot Exp $
 
-package W3C::LogValidator::HTMLOutput;
+package W3C::LogValidator::Output::HTML;
 use strict;
 
 
@@ -128,7 +128,7 @@ $result_string = $result_string.'
 	}
 }	
 
-package W3C::LogValidator::HTMLOutput;
+package W3C::LogValidator::Output::HTML;
 
 1;
 
@@ -136,7 +136,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::HTMLOutput - HTML Output to the Log Validator
+W3C::LogValidator::Output::HTML - HTML Output for the Log Validator
 
 =head1 SYNOPSIS
 
@@ -153,6 +153,7 @@ Olivier Thereaux <ot@w3.org>
 
 =head1 SEE ALSO
 
-W3C::LogValidator::LogProcessor, perl(1).
+W3C::LogValidator, perl(1).
+Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
 
 =cut

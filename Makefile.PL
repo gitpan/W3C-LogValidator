@@ -9,10 +9,10 @@ use English;
 #use 5.006;
 
 WriteMakefile(
-    'NAME'              => 'W3C::LogValidator::LogProcessor',
+    'NAME'              => 'W3C::LogValidator',
     'DISTNAME'          => 'W3C-LogValidator',
     'AUTHOR'            => 'Olivier Thereaux <ot@w3.org>',
-    'VERSION_FROM'      => 'LogProcessor.pm', # finds $VERSION
+    'VERSION_FROM'      => 'lib/W3C/LogValidator.pm', # finds $VERSION
     'PREREQ_PM'         => { 'Exporter'       => 0,
                              'Sys::Hostname'  => 0,
                              'LWP::UserAgent' => 0,

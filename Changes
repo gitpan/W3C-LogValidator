@@ -1,11 +1,15 @@
 Revision history for Perl extension W3C::LogValidator
 
+0.1.1		May 8th 2003 : maintenance release
+	- mostly packaging and documentation issues
 
-0.1.1 	Apr 1st 2003 : beta 2 (after beta test, March 2003)
+0.1		Apr 15th 2003 : first stable release
+
+0.1.beta2 	Apr 1st 2003 : beta 2 (after beta test, March 2003)
 	- modularized output, with "console output" as default, 
 	e-mail and HTML output available
-	- mechanism to avoir parsing too long logfiles
+	- mechanism to avoid parsing too long logfiles
 
-0.1 	Aug 28th, 2002 : beta 1 based on CVS code. 
+0.1beta1 	Aug 28th, 2002 : beta 1 based on CVS code. 
 	This first version has 2 modules, Basic and HTMLValidator
 
