@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Mail.pm,v 1.10 2004/09/10 00:41:24 ot Exp $
+# $Id: Mail.pm,v 1.12 2004/11/12 07:10:47 ot Exp $
 
 package W3C::LogValidator::Output::Mail;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -63,7 +63,7 @@ sub finish
 		$mon ++; # weird 'feature': months run 0-11; days run 1-31 :-(
 		my $date = ($year+1900) .'-'. ($mon>9 ? $mon:"0$mon") .'-'. ($day>9 ? $day:"0$day");
 
-		if (defined $config{"ServerAdmin"})
+		if (defined $config{"ServerAdmin"} and $result_string ne "")
 		# we have someone to send the mail to
 		{
 			my $mail_subject = "Logvalidator results";
@@ -71,7 +71,7 @@ sub finish
 			{
 				$mail_subject = $config{"Title"};
 			}
-			$mail_subject = $mail_subject." ($date  $hour:$min GMT)";
+			$mail_subject = $mail_subject." ($date at $hour:$min GMT)";
 			my $add = $config{"ServerAdmin"};
 			my $mail_from = $add;
 			if (defined $config{"MailFrom"})
@@ -102,7 +102,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::Output::Mail - e-mail output module for the Log Validator
+W3C::LogValidator::Output::Mail - [W3C Log Validator] e-mail output module
 
 =head1 DESCRIPTION
 

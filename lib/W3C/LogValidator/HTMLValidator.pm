@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.17 2004/09/10 00:41:24 ot Exp $
+# $Id: HTMLValidator.pm,v 1.19 2004/11/12 07:10:47 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.17 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
 
 
 
@@ -147,7 +147,7 @@ sub trim_uris
             $exclude_regexp =~ s/\//\\\//g ;
             @excluded_areas = split(" ", $exclude_regexp);
 	}
-	else { print "nothing to exclude" if ($verbose >2);}
+	else { print "nothing to exclude\n" if ($verbose >2);}
 	my $uri;
         while ($uri = shift)
         {
@@ -350,7 +350,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::HTMLValidator - check HTML validity vith validator.w3.org
+W3C::LogValidator::HTMLValidator - [W3C Log Validator] Batch HTML validation (using the W3C Markup Validator)
 
 =head1 SYNOPSIS
 

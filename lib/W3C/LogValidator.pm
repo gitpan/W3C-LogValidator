@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.12 2004/09/10 00:41:24 ot Exp $
+# $Id: LogValidator.pm,v 1.14 2004/11/10 00:16:47 ot Exp $
 
 package W3C::LogValidator;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.14 $ =~ /(\d+)\.(\d+)/;
 
 our %config;
 our $output="";
@@ -247,6 +247,7 @@ sub find_uri
 			$tmprecord = $self->remove_duplicates($tmprecord);
 			$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
 		}
+	#print "$tmprecord \n" if ($verbose > 2);
 	return $tmprecord;
 	}
 }
@@ -316,18 +317,28 @@ sub use_modules
 		push @modules, $config{LogProcessor}{UseValidationModule};
 	}
 	foreach my $module_to_use (@modules)
-	{
+	{	
+		my $output_tmp = "";
 		eval "use $module_to_use";
 		my $process_module;
 		my %mod_config=$self->config_module($module_to_use);
 		$process_module = $module_to_use->new(\%mod_config);
 	#	$process_module->uris($self->sorted_uris); # not used anymore
 		my %results = $process_module->process_list;
-		
-
+		my $shut_up = 0;
+		if ( exists $config{LogProcessor}{QuietIfNoReport} )
+		{
+			$shut_up = $config{LogProcessor}{QuietIfNoReport};
+		}
 		# We're applying the output module and getting its (potential) output 
-		my $output_tmp = $output_proc->output(\%results);
-		$output = $output.$output_tmp;
+		if ($shut_up and int(@{$results{"trows"}}) == 0)
+		{
+			print "nothing interesting to report - skipping\n" if ($verbose >1)
+		}
+		else {
+			$output_tmp = $output_proc->output(\%results);
+			$output = $output.$output_tmp;
+		}
 		# TODO maybe make this a hash, one output string per output module used
 		# that would allow us to have several output modules at the time... 
 		# is this very useful?

@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Matthieu Faure <matthieu@faure.nom.fr> for W3C
 # maintained by olivier Thereaux <ot@w3.org> and Matthieu Faure <matthieu@faure.nom.fr>
-# $Id: SurveyEngine.pm,v 1.8 2004/08/16 02:12:09 ot Exp $
+# $Id: SurveyEngine.pm,v 1.10 2004/11/12 07:10:47 ot Exp $
 
 package W3C::LogValidator::SurveyEngine;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.8 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -82,7 +82,7 @@ sub trim_uris
             $exclude_regexp =~ s/\//\\\//g ;
             @excluded_areas = split(" ", $exclude_regexp);
         }
-        else { print "nothing to exclude" if ($verbose >2);}
+        else { print "nothing to exclude\n" if ($verbose >2);}
         my $uri;
         while ($uri = shift)
         {
@@ -293,9 +293,9 @@ package W3C::LogValidator::SurveyEngine;
 
 __END__
 
-=head1 SurveyEngine
+=head1 NAME
 
-W3C::LogValidator::SurveyEngine - Processing module for the Log Validator to run websites validity surveys
+W3C::LogValidator::SurveyEngine - [W3C Log Validator] Generic Web site validity/quality survey engine
 
 =head1 SYNOPSIS
 

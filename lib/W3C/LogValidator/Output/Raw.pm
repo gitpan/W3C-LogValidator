@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Raw.pm,v 1.8 2004/09/10 00:41:24 ot Exp $
+# $Id: Raw.pm,v 1.9 2004/11/12 07:10:47 ot Exp $
 
 package W3C::LogValidator::Output::Raw;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.8 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -171,7 +171,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::Output::Raw - STDOUT (console) output module for the Log Validator
+W3C::LogValidator::Output::Raw - [W3C Log Validator] STDOUT (console) output module
 
 =head1 DESCRIPTION
 

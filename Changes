@@ -1,6 +1,11 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.13 2004/09/10 00:41:24 ot Exp $
+$Id: Changes,v 1.14 2004/11/10 00:16:46 ot Exp $
 
+
+0.5 [2004-11-10]
+	- adding "QuietIfNoReport" option. 
+	If this option is set, the LogValidator skips reports 
+	where the details table is empty (nothing to validate, or nothing invalid)
 
 0.4.1 [2004-09-08]
 	- minor documentation fixes

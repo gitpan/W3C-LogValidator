@@ -4,7 +4,7 @@
 #	Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Config.pm,v 1.7 2004/09/10 00:41:24 ot Exp $
+# $Id: Config.pm,v 1.9 2004/11/12 07:10:47 ot Exp $
 
 package W3C::LogValidator::Config;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
 
 our $config_filename;
 our %conf;
@@ -96,6 +96,11 @@ sub config_default
 	if (!exists $conf{LogProcessor}{EntriesPerLogfile})
 	{
 		$conf{LogProcessor}{EntriesPerLogfile}=100000; 
+	}
+	# parameter muting the final report if nothing interesting to say
+	if (!exists $conf{LogProcessor}{QuietIfNoReport})
+	{
+		$conf{LogProcessor}{QuietIfNoReport}=0; # not muted by default
 	}
 }
 
@@ -188,7 +193,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::Config - Configuration parsing for the Log Validator
+W3C::LogValidator::Config - [W3C Log Validator] Configuration parser
 
 =head1 SYNOPSIS
 
