@@ -5,12 +5,12 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: logprocess.pl,v 1.7 2003/03/28 09:47:29 ot Exp $
+# $Id: logprocess.pl,v 1.8 2003/05/18 15:11:08 ot Exp $
 #########################
 
 use strict;
 use Getopt::Long qw(GetOptions);
-use W3C::LogValidator::LogProcessor ();
+use W3C::LogValidator ();
 
 my $conffile = '';
 my %conf;
@@ -23,8 +23,8 @@ GetOptions('q|quiet'      => sub { $conf{"verbose"} = 0; },
            'd|debug'      => sub { $conf{"verbose"} = 3; },
            'f|config=s'   => \$conffile,
            'help|h|?'     => sub { usage(1); exit 0 },
-	   'HTML'         => sub { $conf{"UseOutputModule"} = "W3C::LogValidator::HTMLOutput"; },
-	   'email'	  => sub { $conf{"UseOutputModule"} = "W3C::LogValidator::MailOutput"; },
+	   'HTML'         => sub { $conf{"UseOutputModule"} = "W3C::LogValidator::Output::HTML"; },
+	   'email'	  => sub { $conf{"UseOutputModule"} = "W3C::LogValidator::Output::Mail"; },
 	   'o|output=s'	  => \$OutputTo,
 	   's|sendto=s'	  => \$SendTo	   
           ) or usage(1);
@@ -32,7 +32,7 @@ GetOptions('q|quiet'      => sub { $conf{"verbose"} = 0; },
 $conf{"OutputTo"} = $OutputTo if ($OutputTo); 
 $conf{"ServerAdmin"} = $SendTo if ($SendTo); 
 
-W3C::LogValidator::LogProcessor->new($conffile, \%conf)->process();
+W3C::LogValidator->new($conffile, \%conf)->process();
 
 sub usage
 {
@@ -54,7 +54,7 @@ sub usage
    -o/--output <filename>	choose where to save output
 	the output will go to console if not specified
   -s/--sendto <email>		choose where to send the e-mail 
-	In e-mail output mode , if neither this nor ServerAdmin (in the config)
+	In e-mail output mode, if neither this nor ServerAdmin (in the config)
 	is specified then the output will fall-back to console
 
 

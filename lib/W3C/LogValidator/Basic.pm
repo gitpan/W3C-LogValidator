@@ -68,7 +68,7 @@ sub process_list
 	my @uris = sort { $hits{$b} <=> $hits{$a} }                                   
                 keys %hits;
 
-	my $intro="Here are the <census> most popular documents overall for the server $name.";
+	my $intro="Here are the <census> most popular documents overall for $name.";
 	my @result;
 	my @result_head;
 	push @result_head, "Rank";

@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTML.pm,v 1.1 2003/05/07 02:53:20 ot Exp $
+# $Id: HTML.pm,v 1.7 2003/05/18 16:17:04 ot Exp $
 
 package W3C::LogValidator::Output::HTML;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 
 ###########################
@@ -88,9 +88,6 @@ sub finish
 # embed HTML tidbits in a full HTML file 
 # and either save or output
  my $self = shift;
-my ($sec,$min,$hour,$day,$mon,$year,$wday,$yday) = gmtime(time);
-$mon ++; # weird 'feature': months run 0-11; days run 1-31 :-(
-my $date = ($year+1900) .'-'. ($mon>9 ? $mon:"0$mon") .'-'. ($day>9 ? $day:"0$day");
 
  my $result_string = '<?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -98,19 +95,64 @@ my $date = ($year+1900) .'-'. ($mon>9 ? $mon:"0$mon") .'-'. ($day>9 ? $day:"0$da
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <title>LogValidator results</title>
-<link rel="Stylesheet" href="http://www.w3.org/QA/2002/12/qa4.css" />
+    <style type="text/css" media="screen">
+h1
+{
+	text-align: center;
+	color : #424242;
+
+}
+h2 {
+   background: #999;
+   color: white;
+   border: none;
+   width: 100%;
+   font-weight: bold;
+   font-size: 1.3em;
+   text-indent: 0.5em;
+   margin-top: 0.5em;
+   padding: 0.1em;
+}
+table {
+	font-size:100%; 
+	width:90%; 
+	border: 1px solid #999;
+	border-spacing: 0px;
+	}
+th,td
+	{
+	text-align:left; 
+	border: 1px solid #999;
+	padding-left : .5em;
+	padding-right : .5em;
+	}
+th
+	{
+	color : #424242;
+}
+p.footer
+	{
+	font-size: small;
+	border-top: 1px solid #999;
+}
+    </style>
+<link rel="Stylesheet" href="http://www.w3.org/QA/Tools/LogValidator/logvalstyle" />
 </head>
 <body>
-<h1>Log Validator results</h1>'."
-<p>Generated on $date at $hour:$min:$sec GMT.</p>";
+<h1>Log Validator results</h1>';
 
        if (@_)
         {
                 my $tmp_result_string = shift;
 		$result_string = $result_string.$tmp_result_string;
 	}
+my ($sec,$min,$hour,$day,$mon,$year,$wday,$yday) = gmtime(time);
+$mon ++; # weird 'feature': months run 0-11; days run 1-31 :-(
+my $date = ($year+1900) .'-'. ($mon>9 ? $mon:"0$mon") .'-'. ($day>9 ? $day:"0$day");
 
 $result_string = $result_string.'
+<p class="footer">Generated on'." $date at $hour:$min:$sec".' GMT
+by the <a href="http://www.w3.org/QA/Tools/LogValidator/">Log Validator</a>.</p>
 </body>
 </html>';
 

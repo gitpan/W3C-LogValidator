@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1.1';
+our $VERSION = '0.2';
 
 our %config;
 our $output="";
@@ -185,15 +185,17 @@ sub read_logfile
 			      
 	 		{
 				$tmp_record =~ chomp;
+				my $logtype = $config{LogProcessor}{LogType}{$logfile};
 				if ($tmp_record) # not a blank line
 				{
-					$tmp_record = $self->find_uri($tmp_record);
+					$tmp_record = $self->find_uri($tmp_record, $logtype);
+					#print "$tmp_record \n" if ($verbose >2);
 					$self->add_uri($tmp_record);
 				}
 				$entriescounter++;
 			}
 			close LOGFILE;
-		} else {
+		} elsif ($logfile) {
 			die "could not open log file $logfile : $!";
 		}
 	}
@@ -210,9 +212,19 @@ sub find_uri
 		@record_arry = split(" ", $tmprecord);
 		# hardcoded to most apache log formats, included common and combined
 		# for the moment... TODO
-		$tmprecord = $record_arry[6];
-		$tmprecord = $self->remove_duplicates($tmprecord);
-		$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
+		my $logtype = shift;
+		# print "log type $logtype" if ($verbose > 2);
+		if ($logtype eq "plain")
+		{
+			$tmprecord = $record_arry[0];
+		}
+		else #common combined or full
+		{
+			$tmprecord = $record_arry[6];
+			$tmprecord = $self->remove_duplicates($tmprecord);
+			$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
+		}
+	return $tmprecord;
 	}
 }
 

@@ -4,8 +4,9 @@
 #########################
 use Test;
 use strict;
+print "testing the core Log validator module... \n";
 BEGIN { plan tests => 1 };
-use W3C::LogValidator::LogProcessor;
-ok(1); # If we made it this far, we're ok.
+use W3C::LogValidator;
+ok("1"); # If we made it this far, we're ok.
 #########################
 

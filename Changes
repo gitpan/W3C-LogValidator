@@ -1,5 +1,9 @@
 Revision history for Perl extension W3C::LogValidator
 
+0.2
+	- adding support to "plain" log file to process simple lists of URIs
+	- improved HTML output
+
 0.1.1		May 8th 2003 : maintenance release
 	- mostly packaging and documentation issues
 

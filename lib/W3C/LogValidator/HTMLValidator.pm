@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 
 ###########################
@@ -139,7 +139,7 @@ sub process_list
 	my @result;
 	my @result_head;
 	my $intro="Here are the <census> most popular invalid document(s) that I could find in the 
-logs for the server $name.";
+logs for $name.";
 	my $outro;
 	push @result_head, "Hits";
 	push @result_head, "Address";
@@ -199,9 +199,10 @@ logs for the server $name.";
 
 	}
 	print "Done!\n" if $verbose;
+	print "invalid_census $invalid_census \n" if ($verbose > 2 );
 	if ($invalid_census) # we found invalid docs
 	{
-		if ($invalid_census eq 1) # let's repect grammar here
+		if ($invalid_census eq 1)  # let's repect grammar here
 		{
 			$intro=~ s/are/is/;
 			$intro=~ s/<census> //;
@@ -234,6 +235,7 @@ This means that about $ratio\% of your most popular documents was invalid.";
 	}
 	else # everything was actually valid!
 	{
+		$intro=~s/<census> //;
 		$outro="I couldn't find any invalid document in this log. Congratulations!";
 	}
 	untie %hits;
