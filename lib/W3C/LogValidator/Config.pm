@@ -4,7 +4,7 @@
 #	Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Config.pm,v 1.6 2004/08/13 06:01:12 ot Exp $
+# $Id: Config.pm,v 1.7 2004/09/10 00:41:24 ot Exp $
 
 package W3C::LogValidator::Config;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.6 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/;
 
 our $config_filename;
 our %conf;
@@ -257,7 +257,7 @@ distributed with the module.
 
 =head1 BUGS
 
-Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
+Public bug-tracking interface at http://www.w3.org/Bugs/Public/
 
 =head1 AUTHOR
 
@@ -267,7 +267,7 @@ Olivier Thereaux <ot@w3.org> for The World Wide Web Consortium
 =head1 SEE ALSO
 
 perl(1).
-Up-to-date information on this tool at L<http://www.w3.org/QA/Tools/LogValidator/>
+Up-to-date information on this tool at http://www.w3.org/QA/Tools/LogValidator/
 
 =cut
 

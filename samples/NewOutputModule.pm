@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Firstname Lastname <your@address.mail> for W3C
 #
-# $Id: NewOutputModule.pm,v 1.3 2004/03/28 19:31:42 ot Exp $
+# $Id: NewOutputModule.pm,v 1.4 2004/09/10 00:41:24 ot Exp $
 
 package W3C::LogValidator::Output::MyOutputModule;
 use strict;
@@ -116,8 +116,7 @@ __END__
 
 =head1 NAME
 
-W3C::LogValidator::Output::MyOutputModule - Sample new output module for the Log Validator
-
+W3C::LogValidator::Output::NewOutputModule - Sample new output module for the Log Validator
 
 =head1 DESCRIPTION
 

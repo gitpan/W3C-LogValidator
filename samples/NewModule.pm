@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Firstname Lastname <your@email.address> for W3C
 #
-# $Id: NewModule.pm,v 1.9 2004/08/16 02:43:32 ot Exp $
+# $Id: NewModule.pm,v 1.11 2004/09/10 00:41:24 ot Exp $
 
 package W3C::LogValidator::Changeme;
 use strict;
@@ -16,7 +16,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.11 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -130,10 +130,6 @@ __END__
 
 W3C::LogValidator::NewModule - New processing module Template for the Log Validator
 
-=head1 SYNOPSIS
-
-
-
 =head1 DESCRIPTION
 
 Note: please change this description when using this module code and documentation as a template.
@@ -141,7 +137,7 @@ Note: please change this description when using this module code and documentati
 This module is a template for the creation of a new processing module for the W3C Log Validator
 
 
--head1 API
+=head1 API
 
 =head2 Constructor
 
@@ -204,6 +200,6 @@ Module created by You <your@address>
 =head1 SEE ALSO
 
 W3C::LogValidator::LogProcessor, perl(1).
-Up-to-date complete info at L<http://www.w3.org/QA/Tools/LogValidator/>
+Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
 
 =cut

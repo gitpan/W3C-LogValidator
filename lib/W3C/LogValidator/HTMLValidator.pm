@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.16 2004/08/16 02:12:09 ot Exp $
+# $Id: HTMLValidator.pm,v 1.17 2004/09/10 00:41:24 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.17 $ =~ /(\d+)\.(\d+)/;
 
 
 
@@ -382,8 +382,8 @@ You might pass it a configuration hash reference (see L<W3C::LogValidator/config
 =back
 
 =head2 Main processing method
-=over 4
 
+=over 4
 
 
 =item $val->process_list
@@ -456,7 +456,7 @@ Resets all validation variables to 'undef'. In effect, prepares the processing m
 
 =head1 BUGS
 
-Public bug-tracking interface at L<http://www.w3.org/Bugs/Public/>
+Public bug-tracking interface at http://www.w3.org/Bugs/Public/
 
 
 
