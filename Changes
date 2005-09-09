@@ -1,6 +1,12 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.14 2004/11/10 00:16:46 ot Exp $
+$Id: Changes,v 1.16 2005/09/09 06:18:10 ot Exp $
 
+
+1.0 [2005-09-09]
+	- adding Link Checker module
+	- updated SurveyEngine Module
+	- bug fixes
+	- documentation improvements
 
 0.5 [2004-11-10]
 	- adding "QuietIfNoReport" option. 

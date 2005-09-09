@@ -1,10 +1,10 @@
-# Copyright (c) YYYY the World Wide Web Consortium :
+# Copyright (c) 2004-2005 the World Wide Web Consortium :
 #       Keio University,
 #       European Research Consortium for Informatics and Mathematics 
 #       Massachusetts Institute of Technology.
 # written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: CSSValidator.pm,v 1.13 2004/11/12 07:10:47 ot Exp $
+# $Id: CSSValidator.pm,v 1.16 2005/09/09 06:33:11 ot Exp $
 
 package W3C::LogValidator::CSSValidator;
 use strict;
@@ -17,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.13 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -45,6 +45,9 @@ sub new
 	{
 		$self->{AUTH_EXT} = ".css";
 	}
+        $config{ValidatorHost} = "jigsaw.w3.org" if (! exists $config{ValidatorHost});
+        $config{ValidatorPort} = "80" if (!exists $config{ValidatorPort});
+        $config{ValidatorString} = "/css-validator/validator" if (!exists $config{ValidatorString});
 	bless($self, $class);
         return $self;
 }
@@ -227,6 +230,8 @@ logs for $name.";
 		$total_census++;
                 print "	processing #$total_census $uri... " if ($verbose > 1);
 		my $val = WebService::Validator::CSS::W3C->new;
+		my $cssvalidator_server=join ("", "http://",$config{ValidatorHost},":",$config{ValidatorPort}, $config{ValidatorString});
+		$val->validator_uri($cssvalidator_server);
 		$val->validate(uri => $uri);
 		$self->valid_success($val->success);
 		$self->valid($val->is_valid);

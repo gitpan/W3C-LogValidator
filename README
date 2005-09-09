@@ -61,6 +61,8 @@ This module requires these other perl modules and libraries:
     File::Temp
     DB_File
     Mail::Sendmail
+    WebService::Validator::CSS::W3C
+    W3C::LinkChecker
 read more about dependencies at http://www.w3.org/QA/Tools/LogValidator/Manual-Install#dep 
 
 COPYRIGHT AND LICENCE
@@ -69,7 +71,7 @@ written by Olivier Thereaux <ot@w3.org> for the W3C
 
 * W3C® SOFTWARE NOTICE AND LICENSE *
 
-Copyright © 1994-2004 World Wide Web Consortium, (Massachusetts
+Copyright © 1994-2005 World Wide Web Consortium, (Massachusetts
 Institute of Technology, European Research Consortium for Informatics 
 and Mathematics, Keio University). All Rights Reserved.
 http://www.w3.org/Consortium/Legal/

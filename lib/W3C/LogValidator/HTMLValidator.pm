@@ -1,10 +1,10 @@
-# Copyright (c) 2002-2003 the World Wide Web Consortium :
+# Copyright (c) 2002-2005 the World Wide Web Consortium :
 #       Keio University,
 #       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.19 2004/11/12 07:10:47 ot Exp $
+# $Id: HTMLValidator.pm,v 1.22 2005/09/09 06:33:11 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.22 $ =~ /(\d+)\.(\d+)/;
 
 
 
@@ -262,6 +262,7 @@ logs for $name.";
 			if ( ($self->valid) and ($self->valid_err_num) ) # invalid doc
 #			if (1) # debug
 			{
+			    if ($self->valid =~ /Invalid/i){
 				my @result_tmp;
 				push @result_tmp, $total_census;
 				push @result_tmp, $hits{$uri_orig};
@@ -270,6 +271,7 @@ logs for $name.";
 				push @result, [@result_tmp];
 				$invalid_census++;
 				$last_invalid_position = $total_census;
+			    }
 			}
 			printf (" %s!", $self->valid) if ( ($verbose > 1) and (defined ($self->valid)));
 			print " Could not validate!" if (($verbose > 1) and(!defined ($self->valid)));
@@ -308,11 +310,16 @@ This means that about $ratio\% of your most popular documents were invalid.";
 		else
 		# we didn't find as many invalid docs as requested
 		{
-
+        if ($max_invalid) {
 			$outro="Conclusion :
 You asked for $max_invalid invalid HTML document but I could only find $invalid_census 
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.";
+This means that about $ratio\% of your most popular documents were invalid.";}
+        else # max_invalid set to 0, user asked for all invalid docs
+   		{$outro="Conclusion :
+I found $invalid_census 
+by processing (all the) $total_census document(s) in your logs. 
+This means that about $ratio\% of your most popular documents were invalid.";}     
 		}
 	}
 	elsif (!$total_census)

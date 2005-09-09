@@ -1,10 +1,10 @@
-# Copyright (c) 2002-2003 the World Wide Web Consortium :
+# Copyright (c) 2002-2005 the World Wide Web Consortium :
 #       Keio University,
 #       European Research Consortium for Informatics and Mathematics
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.14 2004/11/10 00:16:47 ot Exp $
+# $Id: LogValidator.pm,v 1.18 2005/09/09 06:33:11 ot Exp $
 
 package W3C::LogValidator;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.14 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.18 $ =~ /(\d+)\.(\d+)/;
 
 our %config;
 our $output="";
@@ -134,6 +134,7 @@ sub add_uri
 	if (@_)
 	{
 		my $uri = shift;
+		next unless defined($uri);
 		if ( exists($hits{$uri}) )
 		{
 			$hits{$uri} = $hits{$uri}+1;
@@ -207,7 +208,9 @@ sub no_cgi
 	if (@_)
 	{
 		my $tmp_uri = shift;
-		return (!($tmp_uri =~ /\?/));
+		if (defined $tmp_uri) {
+		return (!($tmp_uri =~ /\?/))
+		}
 	}
 }
 
@@ -228,6 +231,7 @@ sub find_uri
 		if ($logtype eq "plain")
 		{
 			$tmprecord = $record_arry[0];
+			$tmprecord = $self->remove_duplicates($tmprecord);
 		}
 		elsif ($logtype eq "w3") # our W3C in-house log format
 		{
@@ -255,19 +259,23 @@ sub find_uri
 sub remove_duplicates
 # removes "directory index" suffixes such as index.html, etc
 # so that http://foobar/ and http://foobar/index.html be counted as one resource
+# also removes URI fragments
 {
 	my $self = shift;
 	my $tmprecord;
 	if (@_) { $tmprecord = shift;}
+	
+	# remove frags
+	$tmprecord =~ s/\#.*$// if ($tmprecord);
+
+	# remove indexes
 	my $index_file;
 	foreach $index_file (split (" ",$config{LogProcessor}{DirectoryIndex}))
 	{
 		$tmprecord =~ s/$index_file$// if ($tmprecord);
 	}
 	return $tmprecord;
-
 }
-
 
 
 sub hit
@@ -388,25 +396,32 @@ W3C::LogValidator - The W3C Log Validator - Quality-focused Web Server log proce
 
 Checks quality/validity of most popular content on a Web server
 
+=head1 DESCRIPTION
+
+C<W3C::LogValidator> is the main module for the W3C Log Validator, a combination of Web Server log analysis and statistics tool and Web Content quality checker.
+
+The C<W3C::LogValidator> can batch-process a number of documents through a number of quality focus checks, such as HTML or CSS validation, or checking for broken links. It can take a number of different inputs, ranging from a simple list of URIs to log files from various Web servers. And since it orders the result depending on the number of times a document appears in the file or logs, it is, in practice, a useful way to spot the most popular documents that need work.
+
+the perl script logprocess.pl, bundled in the W3C::LogValidator distribution, is a simple way to use the features of C<W3C::LogValidator>. Developers can also use C<W3C::LogValidator> can be used as a perl module to build applications.
+
+The homepage for the Log Validator is at: http://www.w3.org/QA/Tools/LogValidator/
+
 =head1 SYNOPSIS
 
-Generic, basic use of the C<W3C::LogValidator> module. Parse configuration file and process relevant logs.
+The simple way to use is to edit the sample configuration file (samples/logprocess.conf) and to run the bundled logprocess.pl script with this configuration file, a la:
+
+    logprocess.pl -f /path/to/logprocess.conf
+
+The basic task of the C<W3C::LogValidator> module is to parse a configuration file and process relevant logs, passed through a configuration file argument: 
 
     use W3C::LogValidator;
     my $logprocessor = W3C::LogValidator->new("sample.conf");
     $logprocessor->process;
 
-Alternatively (use default config and process logs)
+Alternatively, it will use default a default config and try to process Web server logs in "well known locations":
 
     my $logprocessor = W3C::LogValidator->new;
     $logprocessor->process;
-
-
-=head1 DESCRIPTION
-
-C<W3C::LogValidator> is the main module for the W3C Log Validator, a combination of Web Server log analysis and statistics tool and Web Content quality checker.
-
-As an easy alternative to using this module, the perl script logprocess.pl is bundled in the W3C::LogValidator distribution.
 
 =head1 API
 
@@ -517,8 +532,31 @@ Olivier Thereaux <ot@w3.org> for The World Wide Web Consortium
 
 =head1 SEE ALSO
 
-perl(1).
-Up-to-date information on this tool at http://www.w3.org/QA/Tools/LogValidator/
+Up-to-date information on the Log Validator at: 
+
+ http://www.w3.org/QA/Tools/LogValidator/
+
+=head2 Articles and Tutorials
+
+Several articles have been written within the W3C Quality Assurance Interest Group on the topic of improving the quality of Web sites, notably by using a step-by-step approach and relying upon the Log Validator to help find the areas to fix in priority.
+
+=over 2
+
+=item My Web site is standard! And yours?
+
+Available at http://www.w3.org/QA/2002/04/Web-Quality
+
+=item Web Standards Switch
+
+or I<how to improve your Web site easily>. 
+
+Available in several languages at: http://www.w3.org/QA/2003/03/web-kit
+
+=item Making your website valid: a step by step guide.
+
+Available at http://www.w3.org/QA/2002/09/Step-by-step
+
+=back
 
 =cut
 

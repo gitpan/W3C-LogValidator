@@ -1,7 +1,8 @@
 lib/W3C/LogValidator.pm			Main module for the LogValidator
 lib/W3C/LogValidator/Config.pm		Config parser module
-lib/W3C/LogValidator/HTMLValidator.pm	Validates the logs against the W3C Markup (HTML) validator service 
-lib/W3C/LogValidator/CSSValidator.pm	[new] Validates the logs against the W3C CSS validator service 
+lib/W3C/LogValidator/HTMLValidator.pm	Validates against the W3C Markup (HTML) validator service 
+lib/W3C/LogValidator/CSSValidator.pm	Validates against the W3C CSS validator service 
+lib/W3C/LogValidator/LinkChecker.pm	[new] Checks documents in the logs for broken links
 lib/W3C/LogValidator/Basic.pm		Returns document sorted according to their popularity (hits)
 lib/W3C/LogValidator/SurveyEngine.pm	[experimental] generic Web quality survey module
 lib/W3C/LogValidator/Output/HTML.pm	HTML output module
@@ -14,7 +15,10 @@ bin/logprocess.pl
 MANIFEST				This file
 README					Do it! Read this file.
 Changes					History of this package
-t/base.t				test basic (core) modules
-t/module-htmlval.t			test HTMLValidator Module
-Makefile.PL
+t/base.t				test core modules
+t/module-basic.t			test Basic.pm
+t/module-htmlval.t			test HTMLValidator.pm
+t/module-css.t				test CSSValidator.pm
+t/module-linkcheck.t			test LinkChecker.pm
+t/module-survey.t			test SurveyEngine.pm
 META.yml                                 Module meta-data (added by MakeMaker)

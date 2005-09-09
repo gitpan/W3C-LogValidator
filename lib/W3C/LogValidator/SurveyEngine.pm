@@ -1,10 +1,10 @@
-# Copyright (c) 2004 the World Wide Web Consortium :
+# Copyright (c) 2004-2005 the World Wide Web Consortium :
 #       Keio University,
 #       European Research Consortium for Informatics and Mathematics 
 #       Massachusetts Institute of Technology.
 # written by Matthieu Faure <matthieu@faure.nom.fr> for W3C
 # maintained by olivier Thereaux <ot@w3.org> and Matthieu Faure <matthieu@faure.nom.fr>
-# $Id: SurveyEngine.pm,v 1.10 2004/11/12 07:10:47 ot Exp $
+# $Id: SurveyEngine.pm,v 1.12 2005/09/09 06:33:11 ot Exp $
 
 package W3C::LogValidator::SurveyEngine;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -49,7 +49,7 @@ sub new
 	$config{ValidatorHost} = "validator.w3.org" if (! exists $config{ValidatorHost});
 	$config{ValidatorPort} = "80" if (!exists $config{ValidatorPort});
 	$config{ValidatorString} = "/check\?uri=" if (!exists $config{ValidatorString});
-	$config{ValidatorVersion} = "0.6.5" if (!exists $config{ValidatorVersion});
+	$config{ValidatorVersion} = "0.7.0" if (!exists $config{ValidatorVersion});
 	bless($self, $class);
         return $self;
 }
@@ -185,14 +185,15 @@ sub process_list
       my $uri_orig = $uri;
       $uri = uri_escape($uri);
       my @result_tmp = ();
-      print "	processing #$census $uri_orig...\n" if ($verbose > 1);
      $census = $census+1;
+      print "	processing #$census $uri_orig...\n" if ($verbose > 1);
       # filling result table with "fixed" content
       push @result_tmp, $census;
       push @result_tmp, $hits{$uri_orig};
       push @result_tmp, $uri_orig;
 
       my $validatorUri = join ("", "http://",$config{ValidatorHost},":",$config{ValidatorPort}, $config{ValidatorString},$uri);
+      print "$validatorUri \n" if ($verbose > 2); # debug info
 	
       my $testStringCharset = undef;
       my $testStringDoctype = undef;
@@ -206,13 +207,19 @@ sub process_list
 		$testStringInvalid = '<h2 id="result" class="invalid">This page is <strong>not</strong> Valid';
 		$testStringValid = '<h2 id="result" class="valid">This Page Is Valid';
 		$testStringErrorNum = '<th>Errors: </th>.*?<td>(\d+)</td>';
-      } else {
-		# Default ValidatorVersion is 0.6.5 (current version as of may 2004)
+      } elsif ( $config{ValidatorVersion} eq "0.6.5" ) {
 		$testStringCharset = 'found are not valid values in the specified Character Encoding';
 		$testStringDoctype = '<h3>No DOCTYPE Found!';
 		$testStringInvalid = '<h2 class="invalid">This page is <strong>not</strong> Valid';
 		$testStringValid = '<h2 id="result" class="valid">This Page Is Valid';
 		$testStringErrorNum = '<th>Errors: </th>.*?<td>(\d+)</td>';
+      } else { 
+		# Default ValidatorVersion is 0.7.0 (current version as of August 2005)
+		$testStringValid = '<h2 class="valid">This Page Is Valid';
+		$testStringErrorNum = 'Failed validation, .* errors';
+		$testStringDoctype = 'No <code>DOCTYPE</code> found!';
+		$testStringInvalid = '<h2 id="results" class="invalid">This page is';
+		$testStringCharset = 'found are not valid values in the specified Character Encoding';
       }
 
       my $request = new HTTP::Request("GET", $validatorUri );

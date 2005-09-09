@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
-# Copyright (c) 2002 the World Wide Web Consortium :
+# Copyright (c) 2002-2005 the World Wide Web Consortium :
 #       Keio University,
 #       Institut National de Recherche en Informatique et Automatique,
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: logprocess.pl,v 1.9 2003/08/22 16:18:01 ot Exp $
+# $Id: logprocess.pl,v 1.10 2005/09/09 06:33:11 ot Exp $
 #########################
 
 use strict;

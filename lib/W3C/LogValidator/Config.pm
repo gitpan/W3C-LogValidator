@@ -1,10 +1,10 @@
-# Copyright (c) 2002i-2003 the World Wide Web Consortium :
+# Copyright (c) 2002-2005 the World Wide Web Consortium :
 #	Keio University,
 #	European Research Consortium for Informatics and Mathematics
 #	Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Config.pm,v 1.9 2004/11/12 07:10:47 ot Exp $
+# $Id: Config.pm,v 1.10 2005/09/09 06:33:11 ot Exp $
 
 package W3C::LogValidator::Config;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.9 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.10 $ =~ /(\d+)\.(\d+)/;
 
 our $config_filename;
 our %conf;
