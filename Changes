@@ -1,6 +1,8 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.16 2005/09/09 06:18:10 ot Exp $
+$Id: Changes,v 1.17 2005/09/10 12:16:59 ot Exp $
 
+1.01 [2005-09-10]
+	- fixing list of required modules
 
 1.0 [2005-09-09]
 	- adding Link Checker module

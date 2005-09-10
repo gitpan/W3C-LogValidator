@@ -21,4 +21,5 @@ t/module-htmlval.t			test HTMLValidator.pm
 t/module-css.t				test CSSValidator.pm
 t/module-linkcheck.t			test LinkChecker.pm
 t/module-survey.t			test SurveyEngine.pm
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                Module meta-data
+Makefile.PL				Module build meta-data
