@@ -2,13 +2,14 @@
 #       Keio University,
 #       European Research Consortium for Informatics and Mathematics 
 #       Massachusetts Institute of Technology.
-# written by Firstname Lastname <your@email.address> for W3C
+# written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LinkChecker.pm,v 1.3 2005/09/09 06:33:11 ot Exp $
+# $Id: LinkChecker.pm,v 1.5 2006/01/15 19:30:50 ot Exp $
 
 package W3C::LogValidator::LinkChecker;
 use strict;
 use warnings;
+use Config;
 
 
 require Exporter;
@@ -16,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.3 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -74,7 +75,8 @@ sub path_checklink
     }
     }
     if ($found == 0) {
-        foreach ('/usr/bin/checklink', '/bin/checklink', '/usr/local/bin/checklink', './checklink'){
+        foreach ("$Config{scriptdirexp}/checklink", "$Config{binexp}/checklink",
+		 '/usr/bin/checklink', '/bin/checklink', '/usr/local/bin/checklink', './checklink'){
              $cl_path = $_;
              print "looking for checklink at: $cl_path..." if ($verbose >1);
              
@@ -275,14 +277,13 @@ W3C::LogValidator::LinkChecker - [W3C Log Validator] finds the most popular docu
 
 =head1 DESCRIPTION
 
-This module is part of the W3C::LogValidator suite, and combines the W3C link checker with a Web server log analysis tool, providing a way to fix documents with broken links little by little while focusing first on the ones that should have priority.
+This module is part of the W3C::LogValidator suite, and combines the W3C link checker (see L<http://validator.w3.org/checklink>, and L<W3C::LinkChecker>) with a Web server log analysis tool, providing a way to fix documents with broken links little by little while focusing first on the ones that should have priority.
 
 
 =head1 AUTHOR
 
-Template created by olivier Thereaux <ot@w3.org> for W3C
+olivier Thereaux <ot@w3.org> for W3C
 
-Module created by You <your@address>
 
 =head1 SEE ALSO
 

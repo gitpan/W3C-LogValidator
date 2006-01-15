@@ -1,5 +1,9 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.19 2006/01/13 08:25:16 ot Exp $
+$Id: Changes,v 1.20 2006/01/15 19:40:22 ot Exp $
+
+1.04 [2006-01-16]
+	- improved detection of link checker program for eponymous module
+	  (patch submitted by Slaven Rezic)
 
 1.03 [2006-01-13]
 	- making dependency to link checker less strict
@@ -7,7 +11,6 @@ $Id: Changes,v 1.19 2006/01/13 08:25:16 ot Exp $
 
 1.02 [2006-01-06]
 	- fixing a broken dependency
-	- improved detection of link checker program for eponymous module
 
 1.01 [2005-09-10]
 	- fixing list of required modules
