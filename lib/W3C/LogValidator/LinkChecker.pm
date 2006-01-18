@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LinkChecker.pm,v 1.5 2006/01/15 19:30:50 ot Exp $
+# $Id: LinkChecker.pm,v 1.7 2006/01/18 04:35:35 ot Exp $
 
 package W3C::LogValidator::LinkChecker;
 use strict;
@@ -17,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.5 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.7 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -156,7 +156,13 @@ sub process_list
 		print "	processing #$total_census $uri..." if ($verbose > 1);
 
         # FIXME at some point we will use the library instead of running the script
-        open(LINK, "$checklink $uri 2>/dev/null |");
+        #open(LINK, "$checklink $uri 2>/dev/null |");
+	open LINK, "-|" or do {
+		require File::Spec;
+		open STDERR, "> " . File::Spec->devnull or die $!;
+		exec $checklink, $uri;
+		die "Can't execute $checklink: $!";
+	};
         my $num_errs = 0;
         print "\n" if ($verbose > 2);
         while (<LINK>) {
@@ -221,12 +227,12 @@ This means that about $ratio\% of your most popular documents needs fixing.";
 		 $outro= "Conclusion :
 You asked for $max_invalid   document with broken links but I could only find $invalid_census 
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.";}
+This means that about $ratio\% of your most popular documents needs fixing.";}
         else # max_invalid set to 0, user asked for all invalid docs
    		{ $outro= "Conclusion :
 I found $invalid_census documents with broken links
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.";}     
+This means that about $ratio\% of your most popular documents needs fixing.";}     
         }
 	}
 	elsif (!$total_census)

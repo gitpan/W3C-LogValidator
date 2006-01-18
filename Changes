@@ -1,5 +1,8 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.20 2006/01/15 19:40:22 ot Exp $
+$Id: Changes,v 1.21 2006/01/18 02:32:27 ot Exp $
+
+1.05 [2006-01-18]
+	- "safe pipe open" patch for link checker (courtesy of Slaven Rezic)
 
 1.04 [2006-01-16]
 	- improved detection of link checker program for eponymous module
