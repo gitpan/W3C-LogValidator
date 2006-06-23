@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Matthieu Faure <matthieu@faure.nom.fr> for W3C
 # maintained by olivier Thereaux <ot@w3.org> and Matthieu Faure <matthieu@faure.nom.fr>
-# $Id: SurveyEngine.pm,v 1.12 2005/09/09 06:33:11 ot Exp $
+# $Id: SurveyEngine.pm,v 1.13 2006/04/12 02:42:46 ot Exp $
 
 package W3C::LogValidator::SurveyEngine;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.13 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -186,7 +186,7 @@ sub process_list
       $uri = uri_escape($uri);
       my @result_tmp = ();
      $census = $census+1;
-      print "	processing #$census $uri_orig...\n" if ($verbose > 1);
+      print "	processing #$census $uri_orig..." if ($verbose > 1);
       # filling result table with "fixed" content
       push @result_tmp, $census;
       push @result_tmp, $hits{$uri_orig};
@@ -246,16 +246,9 @@ sub process_list
 		{
 		   push @result_tmp, "Yes";
 		   push @result_tmp, "Yes";
-		
-		   if ( $validatorResponse->content =~ m!$testStringErrorNum!ms ) 
-		   {
-			print "Invalid... $1 Errors \n" if $verbose;
-			push @result_tmp, "No ($1)";
-		   } 
-		   else 
-		   {
-			push @result_tmp, "No (?)";
-		   }
+		   my $numErrors = $validatorResponse->header('X-W3C-Validator-Errors');
+		   print "Invalid... $numErrors Errors" if ( $verbose > 1);
+		   push @result_tmp, "No ($numErrors)";
 		}
 		elsif ( $validatorResponse->content =~ $testStringValid ) {
 		  push @result_tmp, "Yes";
@@ -266,6 +259,7 @@ sub process_list
 		  push @result_tmp, "N/A";
 		  push @result_tmp, "Could not validate";
 		}
+	 print "\n" if ($verbose > 1);
       }
       # store results for this URI in table of results
       push @result, [@result_tmp];

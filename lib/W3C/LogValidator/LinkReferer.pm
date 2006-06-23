@@ -4,10 +4,11 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Basic.pm,v 1.15 2006/06/23 03:53:38 ot Exp $
+# $Id: LinkReferer.pm,v 1.1 2006/06/22 04:55:20 ot Exp $
 
-package W3C::LogValidator::Basic;
+package W3C::LogValidator::LinkReferer;
 use strict;
+no strict "refs";
 use warnings;
 
 
@@ -16,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.15 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.1 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -99,9 +100,10 @@ sub process_list
 	my $name = "";
 	if (exists $config{ServerName}) {$name = $config{ServerName}}
 
-	print "Now Using the Basic module... \n" if $verbose;
+	print "Now Using the Link Referer module... \n" if $verbose;
 	my %hits;
 	my %HTTPcodes;
+	my %referers;
 	my @uris = undef;
 	use DB_File; 
 	if (defined ($config{tmpfile}))
@@ -128,39 +130,64 @@ sub process_list
 		    die ("Cannot create or open $tmp_file_HTTP_codes");
 	}
 
+	if (defined ($config{tmpfile_referers}))
+	{
+		my $tmp_file_referers = $config{tmpfile_referers};
+		tie (%referers, 'DB_File', "$tmp_file_referers", O_RDONLY) || 
+		    die ("Cannot create or open $tmp_file_referers");
+		    print "size of hash:  " . keys( %referers ) . ".\n";
+	}
 
-	my $intro="Here are the <census> most popular documents overall for $name.";
+
+	my $intro="Here are the <census> most popular problematic documents (404 not found etc),";
+	$intro .="along with their top referer, that I could find for $name.";
+	if (exists $config{LogProcessor}{RefererMatch}) {
+	    if ($config{LogProcessor}{RefererMatch} != ".*") {
+	    my $intro .="\n\nOnly referers matching ".$config{LogProcessor}{RefererMatch}." were considered.";
+		}
+	}
 	my @result;
 	my @result_head;
 	push @result_head, "Rank";
 	push @result_head, "Hits";
 	push @result_head, "Address";
+	push @result_head, "Status Code";
+	push @result_head, "Top Referer";
 	my $census = 0;
 	while ( (@uris) and  (($census < $max_documents) or (!$max_documents)) )
 	{
 		my $uri = shift (@uris);
 		chomp ($uri);
 		my @result_tmp;
-		if (!defined $HTTPcodes{$uri})
-#(!defined $HTTPcodes{$uri}) or ($HTTPcodes{$uri} eq "") or ( $HTTPcodes{$uri} =~ /^[2-3]/))
-		{ # This module should ignore requests that resulted in 4XX and 5XX codes
+		if (defined $HTTPcodes{$uri}) 
+		{ if ( $HTTPcodes{$uri} =~ /(301|403|404|5..)/)
+		 { # This module should ignore requests that resulted in success codes
 		    $census++;
 		    push @result_tmp, "$census";
 		    push @result_tmp, "$hits{$uri}";
 		    push @result_tmp, "$uri";
-		    push @result, [@result_tmp];
-		}
-		elsif ($HTTPcodes{$uri} eq "200") 
-		# should perhaps make a subroutine for that instead of DUPing code
-		{
-		    $census++;
-		    push @result_tmp, "$census";
-		    push @result_tmp, "$hits{$uri}";
-		    push @result_tmp, "$uri";
-		    push @result, [@result_tmp];
-		}
-		elsif ((defined $HTTPcodes{$uri}) and ($verbose > 1)) { 
-		    print "$uri returned code $HTTPcodes{$uri}, ignoring \n"; 
+		    push @result_tmp, "$HTTPcodes{$uri}";
+		    my %this_uri_referers;
+		    my $referer_string = "";
+		    foreach my $urireferer (keys %referers) 
+		    {
+			if ($urireferer =~ /$uri : (.*)/) { 
+				$this_uri_referers{$1} = $referers{$urireferer};
+			}
+		    }
+		    my @sorted_refs = sort { $this_uri_referers{$a} cmp $this_uri_referers{$b} } keys %this_uri_referers;
+		    if (defined $sorted_refs[0]) {
+		        my $top_referer = pop @sorted_refs;
+		        $referer_string .= $top_referer." (".$this_uri_referers{$top_referer}.")";
+ 		    }
+		    push @result_tmp, $referer_string;
+		    if ($referer_string ne "") {
+		        push @result, [@result_tmp];
+		    }
+		   else {
+			$census--;
+		   }
+		 }
 		}
 	}
 	print "Done!\n" if $verbose;
@@ -177,9 +204,11 @@ sub process_list
 	if (defined ($config{tmpfile})) { 
 		untie %hits;
 	}
+	if (defined ($config{tmpfile_HTTP_codes})) { untie %HTTPcodes; }
+	if (defined ($config{tmpfile_referers})) { untie %referers; }
 	my $outro="";
 	my %returnhash;
-	$returnhash{"name"}="basic";
+	$returnhash{"name"}="Links referers";
 	$returnhash{"intro"}=$intro;
 	$returnhash{"outro"}=$outro;
 	@{$returnhash{"thead"}}=@result_head;
@@ -187,89 +216,7 @@ sub process_list
 	return %returnhash;
 }
 
-package W3C::LogValidator::Basic;
+package W3C::LogValidator::LinkReferer;
 
 1;
 
-__END__
-
-=head1 NAME
-
-W3C::LogValidator::Basic - [W3C Log Validator] Sort Web server log entries by popularity (hits)
-
-=head1 SYNOPSIS
-
-  use  W3C::LogValidator::Basic;
-  my $b = new W3C::LogValidator::Basic;
-  $b->uris('http://www.w3.org/Overview.html', 'http://www.yahoo.com/index.html');
-  my $result_string= $b->process_list();
-
-=head1 DESCRIPTION
-
-
-This module is part of the W3C::LogValidator suite, and simply gives back pages
-sorted by popularity. This is an example of simple module for LogValidator.
-
-=head1 API 
-
-=head2 Constructor
-
-=over 2
-
-=item $b = W3C::LogValidator::Basic->new
-
-Constructs a new C<W3C::LogValidator:HTMLBasic> processor.  
-
-You might pass it a configuration hash reference (see L<W3C::LogValidator/config_module> and L<W3C::LogValidator::Config>)
-Particularly relevant for this module are the "verbose", "MaxDocuments" and obviously "tmpfile" (see C<process_list>).
-Pass the configuration hash ref as follows:
-
-  $b = W3C::LogValidator::HTMLValidator->new(\%config);
-
-=back
-
-=head2 General Methods
-
-=over 4
-
-=item b->uris 
-
-Returns a  list of URIs to be processed (unless the configuration gives the location for the hash of URI/hits berkeley file, see C<process_list> 
-If an array is given as a parameter, also sets the list of URIs and returns it.
-Note: while this method is useful in other modules of L<W3C::LogValidator>, this basic module is here to sort URIs extracted from Log Files by popularity, this method is hence rather useless for L<W3C::LogValidator::Basic>.
-
-=item b->trim_uris 
-
-Given a list of URIs of documents to process, returns a subset of this list containing the URIs of documents the module supposedly can handle.
-For this module, the decision is made based on the setting for ExcludedAreas only
-
-
-=item b->process_list
-
-Formats the list of URIs sorted by popularity.
-
-Returns a result hash. Keys for this hash are: 
-
-  name (string): the name of the module, i.e "Basic"
-  intro (string): introduction to the processing results
-  thead (array): headers of the results table
-  trows (array of arrays): rows of the results table
-  outro (string): conclusion of the processing results
-
-=back
-
-=head1 BUGS
-
-Public bug-tracking interface at http://www.w3.org/Bugs/Public/
-
-
-=head1 AUTHOR
-
-Olivier Thereaux <ot@w3.org> for W3C
-
-=head1 SEE ALSO
-
-W3C::LogValidator, perl(1).
-Up-to-date complete info at http://www.w3.org/QA/Tools/LogValidator/
-
-=cut

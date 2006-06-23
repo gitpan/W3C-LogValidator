@@ -4,17 +4,17 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.18 2005/09/09 06:33:11 ot Exp $
+# $Id: LogValidator.pm,v 1.19 2006/06/22 05:33:40 ot Exp $
 
 package W3C::LogValidator;
 use strict;
-
+no strict "refs";
 require Exporter;
 our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.18 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
 
 our %config;
 our $output="";
@@ -22,6 +22,9 @@ our $config_filename = undef;
 our $verbose;
 our %cmdline_conf;
 our %hits; # hash URI->hits
+our %referers;
+our %mimetypes;
+our %HTTPcodes;
 our $output_proc;
 
 ###########################
@@ -95,6 +98,9 @@ sub new
 	use File::Temp qw/ /;
 	my $tmpdir = File::Spec->tmpdir;
 	$config{LogProcessor}{tmpfile} = File::Temp::tempnam( $tmpdir, "LogValidator-" );
+	$config{LogProcessor}{tmpfile_HTTP_codes} = File::Temp::tempnam( $tmpdir, "LogValidator-" );
+	$config{LogProcessor}{tmpfile_mime_types} = File::Temp::tempnam( $tmpdir, "LogValidator-" );
+	$config{LogProcessor}{tmpfile_referers} = File::Temp::tempnam( $tmpdir, "LogValidator-" );
 	bless($self, $class);
 	return $self;
 }
@@ -144,6 +150,66 @@ sub add_uri
 	}
 }
 
+sub add_referer
+# usage $self->add_referer($uri, $referer)
+{
+	my $self = shift;
+	if (@_)
+	{
+	    my $uri = shift;
+	    my $referer = shift;
+	    $referer =~ s/^"(.*)"$/$1/;
+	    my $preferedref = $config{LogProcessor}{RefererMatch};
+	    if (($referer ne "-") and ( $referer =~ /$preferedref/))
+	    {
+	   
+	        if (exists $referers{"$uri : $referer"})
+	        # nth time this referer is mentioned for $uri, incrementing
+	        {
+		    $referers{"$uri : $referer"} += 1;
+	        }
+	        else
+	        # first time this referer is mentioned for $uri
+	        {
+		    $referers{"$uri : $referer"} = 1;
+	        }
+	    }
+	}
+}
+
+sub add_mime_type
+# record the mime type known for a given logged resource
+# usage $self->add_mime_type('http://foobar', "text/html")
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $uri = shift;
+		my $mime_type = shift;
+		next unless defined($uri);
+		if (! exists($mimetypes{$uri}) )
+		{ $mimetypes{$uri} = $mime_type; }
+	}
+}
+
+sub add_HTTP_code
+# record the returned HTTP Code for a given logged resource
+# usage $self->add_HTTP_code('http://foobar', "200")
+# NOTE: doesn't cover if that code changes throughout the log file - TODO fix that?
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $uri = shift;
+		my $HTTP_code = shift;
+		next unless defined($uri);
+		if (! exists($HTTPcodes{$uri}) )
+		{ 
+		    $HTTPcodes{$uri} = $HTTP_code; 
+		}
+	}
+}
+
 sub read_logfiles
 # just looping
 {
@@ -153,6 +219,20 @@ sub read_logfiles
 	my $tmp_file = $config{LogProcessor}{tmpfile};
 	tie (%hits, 'DB_File', "$tmp_file") ||
 	die ("Cannot create or open $tmp_file");
+
+	# TODO this should probably be triggered (on or off) by an option rather than always on
+	
+	my $tmp_file_referers = $config{LogProcessor}{tmpfile_referers};
+	tie (%referers, 'DB_File', "$tmp_file_referers") ||
+	die ("Cannot create or open $tmp_file_referers");
+	
+	my $tmp_file_mime_types = $config{LogProcessor}{tmpfile_mime_types};
+	tie (%mimetypes, 'DB_File', "$tmp_file_mime_types") ||
+	die ("Cannot create or open $tmp_file_mime_types");
+	
+	my $tmp_file_HTTP_codes = $config{LogProcessor}{tmpfile_HTTP_codes};
+	tie (%HTTPcodes, 'DB_File', "$tmp_file_HTTP_codes") ||
+	die ("Cannot create or open $tmp_file_HTTP_codes");
 	
 	print "Reading logfiles: " if ($verbose); #non-quiet mode
 	print "\n" if ($verbose >1); # verbose or above, we'll have details so linebreak
@@ -161,7 +241,12 @@ sub read_logfiles
 	{
 		$self->read_logfile($current_logfile);
 	}
+
 	untie %hits;
+	untie %HTTPcodes;
+	untie %mimetypes;
+	untie %referers;
+
 	print "Done! \n" if ($verbose); #non-quiet mode
 
 }
@@ -189,9 +274,17 @@ sub read_logfile
 				my $logtype = $config{LogProcessor}{LogType}{$logfile};
 				if ($tmp_record) # not a blank line
 				{
-					$tmp_record = $self->find_uri($tmp_record, $logtype);
-					#print "$tmp_record \n" if ($verbose >2);
-					if ($self->no_cgi($tmp_record)) {$self->add_uri($tmp_record);}
+					my $tmp_record_uri = $self->find_uri($tmp_record, $logtype);
+					my $tmp_record_mime_type = $self->find_mime_type($tmp_record, $logtype);
+					my $tmp_record_HTTP_code = $self->find_HTTP_code($tmp_record, $logtype);
+					my $tmp_record_referer = $self->find_referer($tmp_record, $logtype);
+					if ($self->no_cgi($tmp_record)) {
+						$self->add_uri($tmp_record_uri);
+						$self->add_mime_type($tmp_record_uri, $tmp_record_mime_type);
+						$self->add_HTTP_code($tmp_record_uri,$tmp_record_HTTP_code);
+						$self->add_referer($tmp_record_uri,$tmp_record_referer);
+					}
+
 				}
 				$entriescounter++;
 			}
@@ -233,19 +326,7 @@ sub find_uri
 			$tmprecord = $record_arry[0];
 			$tmprecord = $self->remove_duplicates($tmprecord);
 		}
-		elsif ($logtype eq "w3") # our W3C in-house log format
-		{
-			$tmprecord = $record_arry[4];
-			# an oddity of W3C log formats
-			my $serverstring = join ("",'http://',$config{LogProcessor}{ServerName});
-			$tmprecord =~ s/$serverstring//;
-			my $path = $config{LogProcessor}{DocumentRoot};
-			$tmprecord =~ s/$path/\//;
-			$tmprecord = $self->remove_duplicates($tmprecord);
-			$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
-			
-		}
-		else #common combined or full
+		else #common combined or full or w3c
 		{
 			$tmprecord = $record_arry[6];
 			$tmprecord = $self->remove_duplicates($tmprecord);
@@ -255,6 +336,87 @@ sub find_uri
 	return $tmprecord;
 	}
 }
+
+sub find_HTTP_code
+# finds the returned HTTP code from a log record, if available
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $tmprecord = shift;
+		my @record_arry;
+		@record_arry = split(" ", $tmprecord);
+		# hardcoded to most apache log formats, included common and combined
+		# for the moment... TODO
+		my $logtype = shift;
+		# print "log type $logtype" if ($verbose > 2);
+		if ($logtype eq "plain") 
+		{
+			$tmprecord = "";
+		}
+		else #common combined full or w3c
+		{
+			$tmprecord = $record_arry[8];
+		}
+	#print "HTTP Code $tmprecord \n" if (($verbose > 2) and ($tmprecord ne ""));
+	return $tmprecord;
+	}
+}
+
+sub find_referer
+# finds the referrer info from a log record, if available
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $tmprecord = shift;
+		my @record_arry;
+		@record_arry = split(" ", $tmprecord);
+		# hardcoded to most apache log formats, included common and combined
+		# for the moment... TODO
+		my $logtype = shift;
+		# print "log type $logtype" if ($verbose > 2);
+		if ( ($logtype eq "plain") or ($logtype eq "common"))
+		{
+			$tmprecord = "";
+		}
+		else #combined or full or w3c
+		{
+			$tmprecord = $record_arry[10];
+		}
+	#print "referrer $tmprecord \n" if (($verbose > 2) and ($tmprecord ne ""));
+	return $tmprecord;
+	}
+}
+
+sub find_mime_type 
+# only for W3c extended log format - find the mime type for the resource
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $tmprecord = shift;
+		my @record_arry;
+		@record_arry = split(' ', $tmprecord);
+		# hardcoded to most apache log formats, included common and combined
+		# for the moment... TODO
+		my $logtype = shift;
+		# print "log type $logtype" if ($verbose > 2);
+		if ($logtype eq "w3c") 
+		{
+			
+			$tmprecord = pop @record_arry;
+		}
+		else # all other formats
+		{
+			$tmprecord = "";
+		}
+	#print "mime type $tmprecord \n" if (($verbose > 2) and ($tmprecord ne ""));
+	return $tmprecord;
+	}
+}
+
+
 
 sub remove_duplicates
 # removes "directory index" suffixes such as index.html, etc
