@@ -4,12 +4,12 @@
 #       Massachusetts Institute of Technology.
 # written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: CSSValidator.pm,v 1.16 2005/09/09 06:33:11 ot Exp $
+# $Id: CSSValidator.pm,v 1.19 2007/09/06 06:20:36 ot Exp $
 
 package W3C::LogValidator::CSSValidator;
 use strict;
 use warnings;
-use WebService::Validator::CSS::W3C;
+use WebService::Validator::CSS::W3C 0.2;
 
 
 require Exporter;
@@ -17,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -45,11 +45,15 @@ sub new
 	{
 		$self->{AUTH_EXT} = ".css";
 	}
-        $config{ValidatorHost} = "jigsaw.w3.org" if (! exists $config{ValidatorHost});
-        $config{ValidatorPort} = "80" if (!exists $config{ValidatorPort});
-        $config{ValidatorString} = "/css-validator/validator" if (!exists $config{ValidatorString});
-	bless($self, $class);
-        return $self;
+  $config{ValidatorHost} = "jigsaw.w3.org" if (! exists $config{ValidatorHost});
+  $config{ValidatorPort} = "80" if (!exists $config{ValidatorPort});
+  $config{ValidatorString} = "/css-validator/validator" if (!exists $config{ValidatorString});
+  # by default, report invalid documents
+  $config{ShowInvalid} = "Yes" if (!exists $config{ShowInvalid});
+  $config{ShowAborted} = "No" if (!exists $config{ShowAborted});
+  $config{ShowValid} = "No" if (!exists $config{ShowValid});
+  bless($self, $class);
+  return $self;
 }
 
 
@@ -134,7 +138,7 @@ sub trim_uris
         {
                 my $uri_ext = "";
                 my $match = 0;
-                if ($uri =~ /(\.[0-9a-zA-Z]+)$/)
+                if ($uri =~ /(\.[0-9a-zA-Z]+)(\?.*)?$/)
                 {
                    $uri_ext = $1;
                 }
@@ -211,7 +215,24 @@ sub process_list
         push @result_head, "#Error(s)";
         push @result_head, "Address";
 
-        my $intro="Here are the <census> most popular invalid document(s) that I could find in the 
+        my @whatweshow;
+        my $whatweshow_str = "";
+
+        push @whatweshow, "valid" if ($config{ShowValid} eq "Yes");
+        push @whatweshow, "invalid" if ($config{ShowInvalid} eq "Yes");
+        push @whatweshow, "non-validable"  if ($config{ShowAborted} eq "Yes");
+        if (@whatweshow eq 3) {
+          $whatweshow_str = "$whatweshow[0], $whatweshow[1] or $whatweshow[2]";
+        }
+        elsif (@whatweshow eq 2) {
+          $whatweshow_str = "$whatweshow[0] or $whatweshow[1]";
+        }
+        elsif (@whatweshow eq 1) {
+          $whatweshow_str = "$whatweshow[0]";
+        }
+
+
+        my $intro="Here are the <census> most popular $whatweshow_str document(s) that I could find in the 
 logs for $name.";
         my $outro;
 
@@ -251,16 +272,22 @@ logs for $name.";
 			else # success - not valid -> invalid
 			{
 				printf ("Invalid, %s error(s)!",$self->valid_err_num) if ($verbose > 1);; 
-				my @result_tmp;
-				push @result_tmp, $total_census;
-				push @result_tmp, $hits{$uri_orig};
-				push @result_tmp, $self->valid_err_num;
-				push @result_tmp, $uri_orig;
-				push @result, [@result_tmp];
-				$invalid_census++;
-				$last_invalid_position = $total_census;
 			}
 		}
+		if ( ((! $self->valid_success) and ($config{ShowAborted} eq "Yes"))
+		   or (($self->valid_success) and (! $self->valid) and ($config{ShowInvalid} eq "Yes")) 
+		   or (($self->valid_success) and ($self->valid) and ($config{ShowValid} eq "Yes")) ){
+		my @result_tmp;
+		push @result_tmp, $total_census;
+		push @result_tmp, $hits{$uri_orig};
+		if (! $self->valid_success) { push @result_tmp, "Abort";}
+		else {push @result_tmp, $self->valid_err_num;}
+		push @result_tmp, $uri_orig;
+		push @result, [@result_tmp];
+		$invalid_census++;
+		$last_invalid_position = $total_census;
+		}
+		
 		print "\n" if ($verbose > 1);
 
 
@@ -283,20 +310,16 @@ logs for $name.";
                 # usual case
                 {
                 	$outro="Conclusion :
-I had to check $last_invalid_position document(s) in order to find $invalid_census invalid CSS documents or documents with stylesheets.
-This means that about $ratio\% of your most popular documents were invalid.
-
-(Note that this CSS validation module is still experimental)";
+I had to check $last_invalid_position document(s) in order to find $invalid_census $whatweshow_str CSS documents or documents with stylesheets.
+This means that about $ratio\% of your most popular documents were $whatweshow_str.";
                 }
                 else
 		# we didn't find as many invalid docs as requested
 		{
                         $outro="Conclusion :
-You asked for $max_invalid invalid stylesheet document(s) but I could only find $invalid_census 
+You asked for $max_invalid $whatweshow_str stylesheet document(s) but I could only find $invalid_census 
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.
-
-(Note that this CSS validation module is still experimental)";
+This means that about $ratio\% of your most popular documents were $whatweshow_str.";
                 }
         }
         elsif (!$total_census)
@@ -307,7 +330,7 @@ This means that about $ratio\% of your most popular documents were invalid.
         else # everything was actually valid!
         {
                 $intro=~s/<census> //;
-                $outro="I couldn't find any invalid document in this log. Congratulations!";
+                $outro="I couldn't find any $whatweshow_str document in this log.";
         }
         if (($total_census == $max_documents) and ($total_census)) # we stopped because of max_documents
         {

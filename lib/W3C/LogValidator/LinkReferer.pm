@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LinkReferer.pm,v 1.1 2006/06/22 04:55:20 ot Exp $
+# $Id: LinkReferer.pm,v 1.2 2006/08/08 05:39:34 ot Exp $
 
 package W3C::LogValidator::LinkReferer;
 use strict;
@@ -17,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.1 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.2 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -160,7 +160,7 @@ sub process_list
 		chomp ($uri);
 		my @result_tmp;
 		if (defined $HTTPcodes{$uri}) 
-		{ if ( $HTTPcodes{$uri} =~ /(301|403|404|5..)/)
+		{ if ( $HTTPcodes{$uri} =~ /(404|5..)/)
 		 { # This module should ignore requests that resulted in success codes
 		    $census++;
 		    push @result_tmp, "$census";

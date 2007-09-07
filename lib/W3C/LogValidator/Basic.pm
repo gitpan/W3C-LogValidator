@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Basic.pm,v 1.15 2006/06/23 03:53:38 ot Exp $
+# $Id: Basic.pm,v 1.16 2007/09/04 04:39:17 ot Exp $
 
 package W3C::LogValidator::Basic;
 use strict;
@@ -16,7 +16,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.15 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -150,7 +150,7 @@ sub process_list
 		    push @result_tmp, "$uri";
 		    push @result, [@result_tmp];
 		}
-		elsif ($HTTPcodes{$uri} eq "200") 
+		elsif (($HTTPcodes{$uri} eq "200")  or (!$HTTPcodes{$uri} =~ /\d+/))
 		# should perhaps make a subroutine for that instead of DUPing code
 		{
 		    $census++;

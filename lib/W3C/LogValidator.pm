@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.19 2006/06/22 05:33:40 ot Exp $
+# $Id: LogValidator.pm,v 1.22 2007/09/07 05:46:02 ot Exp $
 
 package W3C::LogValidator;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.22 $ =~ /(\d+)\.(\d+)/;
 
 our %config;
 our $output="";
@@ -278,7 +278,7 @@ sub read_logfile
 					my $tmp_record_mime_type = $self->find_mime_type($tmp_record, $logtype);
 					my $tmp_record_HTTP_code = $self->find_HTTP_code($tmp_record, $logtype);
 					my $tmp_record_referer = $self->find_referer($tmp_record, $logtype);
-					if ($self->no_cgi($tmp_record)) {
+					if ($self->no_cgi($tmp_record) or ($config{LogProcessor}{ExcludeCGI} eq 0)) {
 						$self->add_uri($tmp_record_uri);
 						$self->add_mime_type($tmp_record_uri, $tmp_record_mime_type);
 						$self->add_HTTP_code($tmp_record_uri,$tmp_record_HTTP_code);
@@ -288,6 +288,7 @@ sub read_logfile
 				}
 				$entriescounter++;
 			}
+			print "	  added $entriescounter URIs.\n" if ($verbose > 2);
 			close LOGFILE;
 		} elsif ($logfile) {
 			die "could not open log file $logfile : $!";
@@ -330,7 +331,9 @@ sub find_uri
 		{
 			$tmprecord = $record_arry[6];
 			$tmprecord = $self->remove_duplicates($tmprecord);
-			$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
+			if( !( $tmprecord =~ m/^https?\:/ ) ) {
+				$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
+			}
 		}
 	#print "$tmprecord \n" if ($verbose > 2);
 	return $tmprecord;

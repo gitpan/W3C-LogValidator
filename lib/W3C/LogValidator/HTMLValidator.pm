@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.22 2005/09/09 06:33:11 ot Exp $
+# $Id: HTMLValidator.pm,v 1.27 2007/09/07 06:15:27 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.22 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.27 $ =~ /(\d+)\.(\d+)/;
 
 
 
@@ -52,6 +52,12 @@ sub new
         {
 		$self->{AUTH_EXT} = ".html .xhtml .phtml .htm .shtml .php .svg .xml /";
 	}
+	$config{ShowInvalid} = "Yes" if (!exists $config{ShowInvalid});
+	$config{ShowAborted} = "No" if (!exists $config{ShowAborted});
+	$config{ShowValid} = "No" if (!exists $config{ShowValid});
+	$config{CheckExtensionlessURIs} = "No" if (!exists $config{CheckExtensionlessURIs});
+
+
 	if (exists $config{verbose}) {$verbose = $config{verbose}}
 	@{$self->{URIs}} = undef;
         bless($self, $class);
@@ -153,15 +159,20 @@ sub trim_uris
         {
                 my $uri_ext = "";
                 my $match = 0;
-                if ($uri =~ /(\.[0-9a-zA-Z]+)$/)
+                if ($uri =~ /(\.[0-9a-zA-Z]+)(\?.*)?$/)
                 {  
                    $uri_ext = $1;
                 }
                 elsif ($uri =~ /\/$/) { $uri_ext = "/";}
-                elsif ( $self->HEAD_check($uri) ) { $match = 1; }
-                foreach my $ext (@authorized_extensions)
-                {   
-                    if ($ext eq $uri_ext) { $match = 1; }
+                elsif (($uri_ext eq "") and $config{CheckExtensionlessURIs}) {$match = 1; } 
+                # we keep URIs without extension, if asked to
+                # otherwise, we check their mime type through the wire
+                elsif ($self->HEAD_check($uri) ) {$match = 1; }
+                if ($match eq 0){
+                  foreach my $ext (@authorized_extensions)
+                  {   
+                      if (($ext eq $uri_ext) or ($ext eq "*")) { $match = 1; }
+                  }
                 }
 		if ($match)
 		{
@@ -178,9 +189,9 @@ sub trim_uris
 
 		  }
                 }
-		
-                push @trimmed_uris,$uri if ($match);
+            push @trimmed_uris,$uri if ($match);            
         }
+        print "trimmed list to ", scalar @trimmed_uris. " URIs\n";
         return @trimmed_uris;
 }
 
@@ -209,6 +220,7 @@ sub process_list
 		@uris = $self->uris();
 		foreach my $uri (@uris) { $hits{$uri} = 0 }
 	}
+	print "processing ", scalar @uris, " URIs\n" if ($verbose >= 1);
 	print "\n (This may take a long time if you have many files to validate)\n" if ($verbose eq 1);
 	print "\n" if ($verbose > 2); # trying to breathe in the debug volume...
 	use LWP::UserAgent;
@@ -224,8 +236,24 @@ sub process_list
 	@uris = $self->trim_uris(@uris);
 	my @result;
 	my @result_head;
-	my $intro="Here are the <census> most popular invalid document(s) that I could find in the 
+	my @whatweshow;
+	my $whatweshow_str = "";
+
+	push @whatweshow, "valid" if ($config{ShowValid} eq "Yes");
+	push @whatweshow, "invalid" if ($config{ShowInvalid} eq "Yes");
+  push @whatweshow, "non-validable"  if ($config{ShowAborted} eq "Yes");
+	if (@whatweshow eq 3) {
+	  $whatweshow_str = "$whatweshow[0], $whatweshow[1] or $whatweshow[2]";
+	}
+	elsif (@whatweshow eq 2) {
+	  $whatweshow_str = "$whatweshow[0] or $whatweshow[1]";
+	}
+	elsif (@whatweshow eq 1) {
+	  $whatweshow_str = "$whatweshow[0]";
+	}
+	my $intro="Here are the <census> most popular $whatweshow_str document(s) that I could find in the 
 logs for $name.";
+
 	my $outro;
 	push @result_head, "Rank";
 	push @result_head, "Hits";
@@ -259,27 +287,48 @@ logs for $name.";
 			$self->valid($response->header('X-W3C-Validator-Status'));
 			$self->valid_err_num($response->header('X-W3C-Validator-Errors'));
 			# we know the validator has been able to (in)validate if $self->valid is not NULL
-			if ( ($self->valid) and ($self->valid_err_num) ) # invalid doc
-#			if (1) # debug
+			if ( ($self->valid)) # we got an answer about validation (valid, invalid or abort)
 			{
-			    if ($self->valid =~ /Invalid/i){
+			    if ( 
+			      (($self->valid =~ /Invalid/i) and ($config{ShowInvalid} eq "Yes")) 
+			      or (($self->valid =~ /Valid/i) and ($config{ShowValid} eq "Yes")) 
+			      or (($self->valid =~ /Abort/i) and ($config{ShowAborted} eq "Yes"))
+			      )  {
 				my @result_tmp;
 				push @result_tmp, $total_census;
 				push @result_tmp, $hits{$uri_orig};
-				push @result_tmp, $self->valid_err_num;
+				if ($self->valid =~ /Abort/i) {
+          push @result_tmp, "Abort";
+				}
+				else {
+				  push @result_tmp, $self->valid_err_num;
+				}
 				push @result_tmp, $uri_orig;
 				push @result, [@result_tmp];
 				$invalid_census++;
 				$last_invalid_position = $total_census;
 			    }
 			}
+			
 			printf (" %s!", $self->valid) if ( ($verbose > 1) and (defined ($self->valid)));
-			print " Could not validate!" if (($verbose > 1) and(!defined ($self->valid)));
+			print " Could not validate (validation failed)!" if (($verbose > 1) and(!defined ($self->valid)));
 
 			if (($verbose > 1) and ($self->valid_err_num)) # verbose or debug
 				{printf ", %s errors!",$self->valid_err_num}
 		}
-		else { print " Could not validate!" if ($verbose > 1) }
+		else { 
+		  print " Could not validate (no response from validator)!" if ($verbose > 1) ;
+		  if ($config{ShowAborted} eq "Yes") {
+			  my @result_tmp;
+				push @result_tmp, $total_census;
+				push @result_tmp, $hits{$uri_orig};
+				push @result_tmp, "Abort";
+				push @result_tmp, $uri_orig;
+				push @result, [@result_tmp];
+				$invalid_census++;
+				$last_invalid_position = $total_census;
+			}
+		  }
 		print "\n" if ($verbose > 1);
 
 		$self->valid_head($response->as_string); # for debug
@@ -304,22 +353,22 @@ logs for $name.";
 		# usual case
 		{
 			$outro="Conclusion :
-I had to check $last_invalid_position document(s) in order to find $invalid_census invalid HTML documents.
-This means that about $ratio\% of your most popular documents were invalid.";
+I had to check $last_invalid_position document(s) in order to find $invalid_census $whatweshow_str HTML documents.
+This means that about $ratio\% of your most popular documents were $whatweshow_str.";
 		}
 		else
 		# we didn't find as many invalid docs as requested
 		{
         if ($max_invalid) {
 			$outro="Conclusion :
-You asked for $max_invalid invalid HTML document but I could only find $invalid_census 
+You asked for $max_invalid $whatweshow_str HTML document but I could only find $invalid_census 
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.";}
+This means that about $ratio\% of your most popular documents were $whatweshow_str.";}
         else # max_invalid set to 0, user asked for all invalid docs
    		{$outro="Conclusion :
-I found $invalid_census 
+I found $invalid_census $whatweshow_str HTML document(s)
 by processing (all the) $total_census document(s) in your logs. 
-This means that about $ratio\% of your most popular documents were invalid.";}     
+This means that about $ratio\% of your most popular documents were $whatweshow_str.";}     
 		}
 	}
 	elsif (!$total_census)
@@ -330,7 +379,7 @@ This means that about $ratio\% of your most popular documents were invalid.";}
 	else # everything was actually valid!
 	{
 		$intro=~s/<census> //;
-		$outro="I couldn't find any invalid document in this log. Congratulations!";
+		$outro="I couldn't find any $whatweshow_str document in this log.";
 	}
 	if (($total_census == $max_documents) and ($total_census)) # we stopped because of max_documents
 	{

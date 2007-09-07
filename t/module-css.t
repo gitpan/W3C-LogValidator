@@ -11,7 +11,7 @@ my $validator = W3C::LogValidator::CSSValidator->new(\%config);
 print "ok 2\n";
 
 
-$validator->uris('http://www.w3.org/StyleSheets/home.css', 'http://yoda.zoy.org/mt-static/styles.css');
+$validator->uris('http://www.w3.org/StyleSheets/home.css', 'http://www.w3.org/StyleSheets/Core/Swiss');
 print "ok 3\n";
 
 my %result= $validator->process_list;
