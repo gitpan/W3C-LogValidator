@@ -1,5 +1,8 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.24 2007/09/06 06:20:35 ot Exp $
+$Id: Changes,v 1.25 2007/09/10 00:55:19 ot Exp $
+
+1.2 [2007-09-10]
+  - clean tarball - similar in feature to 1.1
 
 1.1 [2007-09-05]
   - adding options for the HTML and CSS Validator modules to show which 
