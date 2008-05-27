@@ -4,12 +4,12 @@
 #       Massachusetts Institute of Technology.
 # written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: CSSValidator.pm,v 1.19 2007/09/06 06:20:36 ot Exp $
+# $Id: CSSValidator.pm,v 1.21 2008/05/05 06:41:56 ot Exp $
 
 package W3C::LogValidator::CSSValidator;
 use strict;
 use warnings;
-use WebService::Validator::CSS::W3C 0.2;
+
 
 
 require Exporter;
@@ -17,7 +17,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.19 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.21 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -45,13 +45,16 @@ sub new
 	{
 		$self->{AUTH_EXT} = ".css";
 	}
+  $config{ValidatorMethod} = "HEAD" ;
   $config{ValidatorHost} = "jigsaw.w3.org" if (! exists $config{ValidatorHost});
   $config{ValidatorPort} = "80" if (!exists $config{ValidatorPort});
   $config{ValidatorString} = "/css-validator/validator" if (!exists $config{ValidatorString});
+  $config{ValidatorString} .= "?uri="; 
   # by default, report invalid documents
   $config{ShowInvalid} = "Yes" if (!exists $config{ShowInvalid});
   $config{ShowAborted} = "No" if (!exists $config{ShowAborted});
   $config{ShowValid} = "No" if (!exists $config{ShowValid});
+  $config{CheckExtensionlessURIs} = "No" if (!exists $config{CheckExtensionlessURIs});
   bless($self, $class);
   return $self;
 }
@@ -92,6 +95,12 @@ sub valid_success
         my $self = shift;
         if (@_) { $self->{VALID_SUCCESS} = shift }
                 return $self->{VALID_SUCCESS};
+}
+sub valid_head
+{
+        my $self = shift;
+        if (@_) { $self->{VALID_HEAD} = shift }
+                return $self->{VALID_HEAD};
 }
 
 
@@ -143,10 +152,13 @@ sub trim_uris
                    $uri_ext = $1;
                 }
                 elsif ($uri =~ /\/$/) { $uri_ext = "/";}
+                elsif (($uri_ext eq "") and $config{CheckExtensionlessURIs}) {$match = 1; } 
+                # we keep URIs without extension, if asked to
+                # otherwise, we check their mime type through the wire
                 elsif ( $self->HEAD_check($uri) ) { $match = 1; }
                 foreach my $ext (@authorized_extensions)
                 {
-                    if ($ext eq $uri_ext) { $match = 1; }
+                    if (($ext eq $uri_ext) or ($ext eq "*")) { $match = 1; }
                 }
                 if ($match)
                 {
@@ -191,6 +203,8 @@ sub process_list
         if (exists $config{MaxDocuments}) {$max_documents = $config{MaxDocuments}}                      
         else {$max_documents = 0}
 	print "Now Using the CSS Validation module...\n" if $verbose;
+	use LWP::UserAgent;
+	use URI::Escape;
 	my @uris = undef;
 	my %hits;
 	if (defined ($config{tmpfile}))
@@ -235,6 +249,7 @@ sub process_list
         my $intro="Here are the <census> most popular $whatweshow_str document(s) that I could find in the 
 logs for $name.";
         my $outro;
+    	my $ua = new LWP::UserAgent;
 
         @uris = $self->trim_uris(@uris);
 	my $invalid_census = 0; # number of invalid docs
@@ -249,47 +264,62 @@ logs for $name.";
 		my $uri_orig = $uri;
 		$self->new_doc();
 		$total_census++;
-                print "	processing #$total_census $uri... " if ($verbose > 1);
-		my $val = WebService::Validator::CSS::W3C->new;
-		my $cssvalidator_server=join ("", "http://",$config{ValidatorHost},":",$config{ValidatorPort}, $config{ValidatorString});
-		$val->validator_uri($cssvalidator_server);
-		$val->validate(uri => $uri);
-		$self->valid_success($val->success);
-		$self->valid($val->is_valid);
-		my @errors = $val->errors;
-		$self->{VALID_ERR_NUM} = int( @errors );
-		
-		if (! $self->valid_success)
-		{
-			print " Could not validate!" if ($verbose > 1);
-		}
-		else
-		{
-			if ($self->valid) # success, valid
+        print "	processing #$total_census $uri... " if ($verbose > 1);
+		$uri = uri_escape($uri);
+		# creating the HTTP query string with all parameters
+		my $string=join ("", "http://",$config{ValidatorHost},":",$config{ValidatorPort}, $config{ValidatorString},$uri);
+		my $method = $config{ValidatorMethod};
+		my $request = new HTTP::Request("$method", "$string");
+		my $response = new HTTP::Response;
+		$response = $ua->simple_request($request);
+		if ($response->is_success) {
+		 # not an error, we could contact the server 
+			# set both valid and error number according to response
+			$self->valid($response->header('X-W3C-Validator-Status'));
+			$self->{VALID_ERR_NUM} = $response->header('X-W3C-Validator-Errors');
+			# we know the validator has been able to (in)validate if $self->valid is not NULL
+			if ( ($self->valid)) # we got an answer about validation (valid, invalid or abort)
 			{
-				print "Valid!" if ($verbose > 1);
+			    if ( 
+			      (($self->valid =~ /Invalid/i) and ($config{ShowInvalid} eq "Yes")) 
+			      or (($self->valid =~ /Valid/i) and ($config{ShowValid} eq "Yes")) 
+			      or (($self->valid =~ /Abort/i) and ($config{ShowAborted} eq "Yes"))
+			      )  {
+				      my @result_tmp;
+    			      push @result_tmp, $total_census;
+    			      push @result_tmp, $hits{$uri_orig};
+        			  if ($self->valid =~ /Abort/i) { push @result_tmp, "Abort"; }
+				      else { push @result_tmp, $self->valid_err_num; }
+				      push @result_tmp, $uri_orig;
+				      push @result, [@result_tmp];
+				      $invalid_census++;
+				      $last_invalid_position = $total_census;
+			    }
 			}
-			else # success - not valid -> invalid
-			{
-				printf ("Invalid, %s error(s)!",$self->valid_err_num) if ($verbose > 1);; 
-			}
-		}
-		if ( ((! $self->valid_success) and ($config{ShowAborted} eq "Yes"))
-		   or (($self->valid_success) and (! $self->valid) and ($config{ShowInvalid} eq "Yes")) 
-		   or (($self->valid_success) and ($self->valid) and ($config{ShowValid} eq "Yes")) ){
-		my @result_tmp;
-		push @result_tmp, $total_census;
-		push @result_tmp, $hits{$uri_orig};
-		if (! $self->valid_success) { push @result_tmp, "Abort";}
-		else {push @result_tmp, $self->valid_err_num;}
-		push @result_tmp, $uri_orig;
-		push @result, [@result_tmp];
-		$invalid_census++;
-		$last_invalid_position = $total_census;
-		}
-		
-		print "\n" if ($verbose > 1);
+    		printf (" %s!", $self->valid) if ( ($verbose > 1) and (defined ($self->valid)));
+    		print " Could not validate (validation failed)!" if (($verbose > 1) and(!defined ($self->valid)));
 
+    		if (($verbose > 1) and ($self->valid_err_num)) # verbose or debug
+    				{printf ", %s errors!",$self->valid_err_num}
+    		}
+    		else { 
+    		  print " Could not validate (no response from validator)!" if ($verbose > 1) ;
+    		  if ($config{ShowAborted} eq "Yes") {
+    			  my @result_tmp;
+    				push @result_tmp, $total_census;
+    				push @result_tmp, $hits{$uri_orig};
+    				push @result_tmp, "Abort";
+    				push @result_tmp, $uri_orig;
+    				push @result, [@result_tmp];
+    				$invalid_census++;
+    				$last_invalid_position = $total_census;
+    			}
+    		  }
+    		print "\n" if ($verbose > 1);
+
+    		$self->valid_head($response->as_string); # for debug
+    		if ($verbose > 2) {printf "%s :\n%s", $string, $self->valid_head;} # debug
+    		sleep(1); # do not kill the validator
 
 	}
 	print "Done!\n" if $verbose;
