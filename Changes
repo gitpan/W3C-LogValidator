@@ -1,7 +1,11 @@
 Revision history for Perl module W3C::LogValidator
-$Id: Changes,v 1.26 2008/05/05 06:41:55 ot Exp $
+$Id: Changes,v 1.27 2008/05/28 13:16:38 ot Exp $
 
-1.3 [2008-05-XX]
+1.3.1 [2008-05-28]
+  - removed macos-specific files which tend to trip up some systems.
+    No Functional Changes.
+
+1.3 [2008-05-27]
   - removed dependencies to some currently broken perl modules. No Functional Changes.
 
 1.2 [2007-09-10]
