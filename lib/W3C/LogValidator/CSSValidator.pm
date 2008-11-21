@@ -4,11 +4,12 @@
 #       Massachusetts Institute of Technology.
 # written by olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: CSSValidator.pm,v 1.21 2008/05/05 06:41:56 ot Exp $
+# $Id: CSSValidator.pm,v 1.23 2008/11/18 16:48:56 ot Exp $
 
 package W3C::LogValidator::CSSValidator;
 use strict;
 use warnings;
+use DB_File; 
 
 
 
@@ -17,7 +18,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.21 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.23 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -143,6 +144,14 @@ sub trim_uris
         }
         else { print "nothing to exclude\n" if ($verbose >2);}
         my $uri;
+      	my %HTTPcodes;
+      	if (defined ($config{tmpfile_HTTP_codes}))
+      	{
+      		my $tmp_file_HTTP_codes = $config{tmpfile_HTTP_codes};
+      		tie (%HTTPcodes, 'DB_File', "$tmp_file_HTTP_codes", O_RDONLY) || 
+      		    die ("Cannot create or open $tmp_file_HTTP_codes");
+      	}
+
         while ($uri = shift)
         {
                 my $uri_ext = "";
@@ -176,6 +185,16 @@ sub trim_uris
                   }
                 }
 
+                if (defined $HTTPcodes{$uri}) 
+                { 
+                  if (($HTTPcodes{$uri} ne "200")  and ($HTTPcodes{$uri} =~ /\d+/))
+                  {
+                    $match = 0;
+                		if ($verbose > 2) { 
+                		    print "$uri returned code $HTTPcodes{$uri}, ignoring \n"; 
+                		}
+                  }
+                }
                 push @trimmed_uris,$uri if ($match);
         }
         return @trimmed_uris;
@@ -209,7 +228,6 @@ sub process_list
 	my %hits;
 	if (defined ($config{tmpfile}))
 	{
-		use DB_File; 
 		my $tmp_file = $config{tmpfile};
 		tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) || 
 		    die ("Cannot create or open $tmp_file");

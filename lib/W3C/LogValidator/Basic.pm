@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Basic.pm,v 1.16 2007/09/04 04:39:17 ot Exp $
+# $Id: Basic.pm,v 1.18 2008/11/18 16:48:56 ot Exp $
 
 package W3C::LogValidator::Basic;
 use strict;
@@ -16,7 +16,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.16 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.18 $ =~ /(\d+)\.(\d+)/;
 
 
 ###########################
@@ -142,8 +142,7 @@ sub process_list
 		chomp ($uri);
 		my @result_tmp;
 		if (!defined $HTTPcodes{$uri})
-#(!defined $HTTPcodes{$uri}) or ($HTTPcodes{$uri} eq "") or ( $HTTPcodes{$uri} =~ /^[2-3]/))
-		{ # This module should ignore requests that resulted in 4XX and 5XX codes
+		{ # if no HTTP code present, assume it's a 200
 		    $census++;
 		    push @result_tmp, "$census";
 		    push @result_tmp, "$hits{$uri}";
@@ -159,7 +158,7 @@ sub process_list
 		    push @result_tmp, "$uri";
 		    push @result, [@result_tmp];
 		}
-		elsif ((defined $HTTPcodes{$uri}) and ($verbose > 1)) { 
+		elsif ((defined $HTTPcodes{$uri}) and ($verbose > 2)) { 
 		    print "$uri returned code $HTTPcodes{$uri}, ignoring \n"; 
 		}
 	}

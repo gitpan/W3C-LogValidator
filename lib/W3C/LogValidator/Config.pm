@@ -4,7 +4,7 @@
 #	Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: Config.pm,v 1.12 2007/07/24 06:08:11 ot Exp $
+# $Id: Config.pm,v 1.13 2008/11/14 15:17:20 ot Exp $
 
 package W3C::LogValidator::Config;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.12 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.13 $ =~ /(\d+)\.(\d+)/;
 
 our $config_filename;
 our %conf;
@@ -164,7 +164,7 @@ sub config_file
 	if (exists($tmpconf{CustomLog}))
 	{
 		# if there are several log files, $tmpconf{CustomLog} is an array
-		if (defined @{ $tmpconf{CustomLog} })
+    if (ref($tmpconf{CustomLog}) eq 'ARRAY')
 		{ 
 		   foreach my $customlog (@{ $tmpconf{CustomLog} })
 		   {

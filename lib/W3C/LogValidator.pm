@@ -4,7 +4,7 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: LogValidator.pm,v 1.22 2007/09/07 05:46:02 ot Exp $
+# $Id: LogValidator.pm,v 1.25 2008/11/18 16:49:57 ot Exp $
 
 package W3C::LogValidator;
 use strict;
@@ -14,7 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.22 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.25 $ =~ /(\d+)\.(\d+)/;
 
 our %config;
 our $output="";
@@ -259,7 +259,10 @@ sub read_logfile
 	my $self = shift;
 	my $tmp_record;
 	my $entriesperlogfile = $config{LogProcessor}{EntriesPerLogfile};
+	my $allskiphosts = ($config{LogProcessor}{ExcludeHosts}) ? $config{LogProcessor}{ExcludeHosts} : ""; # default to none
+	my @skiphostsregex = split(" ", $allskiphosts);
 	my $entriescounter=0;
+	my $skip_thishost = 0;
 	if (@_)
 	{
 		my $logfile = shift;
@@ -274,17 +277,37 @@ sub read_logfile
 				my $logtype = $config{LogProcessor}{LogType}{$logfile};
 				if ($tmp_record) # not a blank line
 				{
+					my $tmp_record_remote_addr = $self->find_remote_addr($tmp_record, $logtype);
+					if ($tmp_record_remote_addr) # not a blank remote host or address
+					{
+					        $skip_thishost = 0;
+						foreach my $skipexpression (@skiphostsregex)
+						{
+						     if( $tmp_record_remote_addr =~ /$skipexpression/ )
+						     {
+							print " Skipping " . $tmp_record_remote_addr . " because it matches the ExcludeHosts pattern " . $skipexpression. "\n" if ($verbose > 2);
+							$skip_thishost = 1;
+						     }
+						}
+					}
+
 					my $tmp_record_uri = $self->find_uri($tmp_record, $logtype);
+					my $tmp_record_HTTP_method = $self->find_HTTP_Method($tmp_record, $logtype);
 					my $tmp_record_mime_type = $self->find_mime_type($tmp_record, $logtype);
 					my $tmp_record_HTTP_code = $self->find_HTTP_code($tmp_record, $logtype);
 					my $tmp_record_referer = $self->find_referer($tmp_record, $logtype);
-					if ($self->no_cgi($tmp_record) or ($config{LogProcessor}{ExcludeCGI} eq 0)) {
+					if (
+					  ($skip_thishost == 0) 
+					and
+					  ($tmp_record_HTTP_method eq "GET") 
+					and 
+					  ($self->no_cgi($tmp_record) or ($config{LogProcessor}{ExcludeCGI} eq 0))
+					) {
 						$self->add_uri($tmp_record_uri);
 						$self->add_mime_type($tmp_record_uri, $tmp_record_mime_type);
 						$self->add_HTTP_code($tmp_record_uri,$tmp_record_HTTP_code);
 						$self->add_referer($tmp_record_uri,$tmp_record_referer);
 					}
-
 				}
 				$entriescounter++;
 			}
@@ -333,12 +356,67 @@ sub find_uri
 			$tmprecord = $self->remove_duplicates($tmprecord);
 			if( !( $tmprecord =~ m/^https?\:/ ) ) {
 				$tmprecord = join ("",'http://',$config{LogProcessor}{ServerName},$tmprecord);
+sub find_remote_addr
+# finds the returned HTTP code from a log record, if available
+{
+        my $self = shift;
+        if (@_)
+        {
+                my $tmprecord = shift;
+                my @record_arry;
+                @record_arry = split(" ", $tmprecord);
+                # hardcoded to most apache log formats, included common and combined
+                # for the moment... TODO
+                my $logtype = shift;
+                # print "log type $logtype" if ($verbose > 2);
+                if ($logtype eq "plain")
+                {
+                        $tmprecord = "";
+                }
+                else #common combined full or w3c
+                {
+                        $tmprecord = $record_arry[0];
+                }
+        #print "Remote Addr $tmprecord \n" if (($verbose > 2) and ($tmprecord ne ""));
+        return $tmprecord;
+        }
+}
+
 			}
 		}
 	#print "$tmprecord \n" if ($verbose > 2);
 	return $tmprecord;
 	}
 }
+
+sub find_HTTP_Method
+# finds the returned HTTP Method from a log record, if available
+{
+	my $self = shift;
+	if (@_)
+	{
+		my $tmprecord = shift;
+		my @record_arry;
+		@record_arry = split(" ", $tmprecord);
+		# hardcoded to most apache log formats, included common and combined
+		# for the moment... TODO
+		my $logtype = shift;
+		# print "log type $logtype" if ($verbose > 2);
+		if ($logtype eq "plain") 
+		{
+		  # we consider each of those GETs
+			$tmprecord = "GET";
+		}
+		else #common combined full or w3c
+		{
+			$tmprecord = $record_arry[5];
+			$tmprecord =~ s/^"//;
+		}
+	#print "HTTP Code $tmprecord \n" if (($verbose > 2) and ($tmprecord ne ""));
+	return $tmprecord;
+	}
+}
+
 
 sub find_HTTP_code
 # finds the returned HTTP code from a log record, if available
@@ -628,6 +706,10 @@ Otherwise, a default set of values is used.
 =over 4
 
 =item $processor->process
+=item $processor->find_remote_addr
+
+Given a log record and the type of the log (common log format, flat list of URIs, etc), extracts the remote host or ip
+
 
 Do-it-all method:
 Read configuration file (if any), parse log files, run them through processing modules, send result to output module.

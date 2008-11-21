@@ -4,10 +4,11 @@
 #       Massachusetts Institute of Technology.
 # written by Olivier Thereaux <ot@w3.org> for W3C
 #
-# $Id: HTMLValidator.pm,v 1.27 2007/09/07 06:15:27 ot Exp $
+# $Id: HTMLValidator.pm,v 1.29 2008/11/18 16:48:56 ot Exp $
 
 package W3C::LogValidator::HTMLValidator;
 use strict;
+use DB_File; 
 
 
 require Exporter;
@@ -15,7 +16,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
-our $VERSION = sprintf "%d.%03d",q$Revision: 1.27 $ =~ /(\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d",q$Revision: 1.29 $ =~ /(\d+)\.(\d+)/;
 
 
 
@@ -155,6 +156,15 @@ sub trim_uris
 	}
 	else { print "nothing to exclude\n" if ($verbose >2);}
 	my $uri;
+	my %HTTPcodes;
+	if (defined ($config{tmpfile_HTTP_codes}))
+	{
+		my $tmp_file_HTTP_codes = $config{tmpfile_HTTP_codes};
+		tie (%HTTPcodes, 'DB_File', "$tmp_file_HTTP_codes", O_RDONLY) || 
+		    die ("Cannot create or open $tmp_file_HTTP_codes");
+	}
+
+
         while ($uri = shift)
         {
                 my $uri_ext = "";
@@ -177,17 +187,27 @@ sub trim_uris
 		if ($match)
 		{
             	  foreach my $area (@excluded_areas)
-            	  {
+                {
                     if ($uri =~ /$area/)
                     {
-			my $slasharea = $area;
+                        my $slasharea = $area;
                         $slasharea =~ s/\\\//\//g;
                         $slasharea =~ s/\\././g;
                         print "Ignoring $uri matching $slasharea \n" if ($verbose > 2) ;
                         $match = 0;
                     }
+                  }
+                }
 
-		  }
+                if (defined $HTTPcodes{$uri}) 
+                { 
+                  if (($HTTPcodes{$uri} ne "200")  and ($HTTPcodes{$uri} =~ /\d+/))
+                  {
+                    $match = 0;
+                    if ($verbose > 2) { 
+                      print "$uri returned code $HTTPcodes{$uri}, ignoring \n"; 
+                    }
+                  }
                 }
             push @trimmed_uris,$uri if ($match);            
         }
@@ -209,7 +229,6 @@ sub process_list
 	# Opening the file with the hits and URIs data
 	if (defined ($config{tmpfile}))
 	{
-		use DB_File; 
 		my $tmp_file = $config{tmpfile};
 		tie (%hits, 'DB_File', "$tmp_file", O_RDONLY) || 
 		    die ("Cannot create or open $tmp_file");
